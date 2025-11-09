@@ -2,6 +2,7 @@ package com.vibey.copycraft;
 
 import com.vibey.copycraft.registry.ModBlockEntities;
 import com.vibey.copycraft.registry.ModBlocks;
+import com.vibey.copycraft.registry.ModItems;
 import com.vibey.copycraft.vs2.VS2Integration;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -17,6 +18,8 @@ public class CopyCraft {
 
         ModBlocks.BLOCKS.register(modBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
+
+        ModItems.ITEMS.register(modBus);
 
         modBus.addListener(this::commonSetup);
     }

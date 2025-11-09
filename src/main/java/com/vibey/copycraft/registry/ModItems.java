@@ -12,7 +12,7 @@ public class ModItems {
             DeferredRegister.create(ForgeRegistries.ITEMS, CopyCraft.MODID);
 
     // Register block items
-    public static final RegistryObject<Item> COPY_BLOCK = ITEMS.register("copy_block",
+    public static final RegistryObject<BlockItem> COPY_BLOCK = ITEMS.register("copy_block",
             () -> new BlockItem(ModBlocks.COPY_BLOCK.get(), new Item.Properties())
     );
 }
