@@ -35,6 +35,10 @@ public class CopyBlockRenderer implements BlockEntityRenderer<CopyBlockEntity> {
     public void render(CopyBlockEntity blockEntity, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
 
+        if (blockEntity.getLevel() == null) {
+            return;
+        }
+
         BlockState copiedState = blockEntity.getCopiedBlock();
         BlockState copyBlockState = blockEntity.getBlockState();
         BlockPos pos = blockEntity.getBlockPos();
@@ -42,26 +46,21 @@ public class CopyBlockRenderer implements BlockEntityRenderer<CopyBlockEntity> {
         poseStack.pushPose();
 
         try {
-            // Get the Copy Block's model (YOUR custom UV mapping and geometry)
             BakedModel copyBlockModel = blockRenderer.getBlockModel(copyBlockState);
 
-            // Get the texture sprite from the copied block
             TextureAtlasSprite textureSprite;
             if (blockEntity.hasCopiedBlock()) {
                 BakedModel copiedModel = blockRenderer.getBlockModel(copiedState);
                 textureSprite = copiedModel.getParticleIcon(ModelData.EMPTY);
             } else {
-                // Default texture when nothing is copied
                 BakedModel defaultModel = blockRenderer.getBlockModel(Blocks.OAK_PLANKS.defaultBlockState());
                 textureSprite = defaultModel.getParticleIcon(ModelData.EMPTY);
             }
 
-            // FIXED: Don't use packedLight directly - calculate per-vertex lighting
             renderModelWithTexture(copyBlockModel, textureSprite, poseStack, bufferSource,
                     packedOverlay, copyBlockState, pos, blockEntity.getLevel());
 
         } catch (Exception e) {
-            // Fallback rendering
             e.printStackTrace();
         }
 
@@ -75,58 +74,65 @@ public class CopyBlockRenderer implements BlockEntityRenderer<CopyBlockEntity> {
 
         RandomSource random = RandomSource.create(42L);
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
+        boolean useAO = Minecraft.useAmbientOcclusion() && model.useAmbientOcclusion();
 
-        // Render each face direction + null (for non-culled quads)
         for (Direction direction : Direction.values()) {
             List<BakedQuad> quads = model.getQuads(state, direction, random, ModelData.EMPTY, RenderType.cutout());
-            renderQuadsWithTexture(quads, texture, poseStack, consumer, packedOverlay, pos, level, direction);
+            if (!quads.isEmpty()) {
+                renderQuadsWithTexture(quads, texture, poseStack, consumer, packedOverlay, pos, level, direction, useAO);
+            }
         }
 
-        // Render non-culled quads
         List<BakedQuad> quads = model.getQuads(state, null, random, ModelData.EMPTY, RenderType.cutout());
-        renderQuadsWithTexture(quads, texture, poseStack, consumer, packedOverlay, pos, level, null);
+        if (!quads.isEmpty()) {
+            renderQuadsWithTexture(quads, texture, poseStack, consumer, packedOverlay, pos, level, null, useAO);
+        }
     }
 
     private void renderQuadsWithTexture(List<BakedQuad> quads, TextureAtlasSprite sprite,
                                         PoseStack poseStack, VertexConsumer consumer,
                                         int packedOverlay, BlockPos pos, BlockAndTintGetter level,
-                                        Direction cullFace) {
+                                        Direction cullFace, boolean useAO) {
 
         PoseStack.Pose pose = poseStack.last();
 
         for (BakedQuad quad : quads) {
             int[] vertexData = quad.getVertices();
+            Direction face = quad.getDirection();
 
-            // Calculate lighting ONCE per quad based on the face direction
-            int packedLight;
-            if (cullFace != null) {
-                // Get light from the neighboring block in the direction this face points
-                BlockPos lightPos = pos.relative(cullFace);
-                packedLight = LightTexture.pack(
-                        level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, lightPos),
-                        level.getBrightness(net.minecraft.world.level.LightLayer.SKY, lightPos)
-                );
-            } else {
-                // For non-culled quads, use the block's own position
-                packedLight = LightTexture.pack(
-                        level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos),
-                        level.getBrightness(net.minecraft.world.level.LightLayer.SKY, pos)
-                );
+            // Calculate light using Minecraft's method
+            int combinedLight = LightTexture.pack(
+                    level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos.relative(face)),
+                    level.getBrightness(net.minecraft.world.level.LightLayer.SKY, pos.relative(face))
+            );
+
+            // Apply shade if the quad has shading enabled
+            float shadeR = 1.0F, shadeG = 1.0F, shadeB = 1.0F;
+
+            // Check if this quad should be shaded (directional lighting)
+            if (quad.isShade()) {
+                // Apply vanilla directional shading based on face direction
+                float shadeFactor = level.getShade(face, true);
+                shadeR = shadeG = shadeB = shadeFactor;
             }
 
             // Process 4 vertices
             for (int i = 0; i < 4; i++) {
-                int idx = i * 8; // 8 ints per vertex
+                int idx = i * 8;
 
-                // Position
                 float x = Float.intBitsToFloat(vertexData[idx + 0]);
                 float y = Float.intBitsToFloat(vertexData[idx + 1]);
                 float z = Float.intBitsToFloat(vertexData[idx + 2]);
 
-                // Color
+                // Get color and apply shading
                 int color = vertexData[idx + 3];
+                int r = (int) (((color >> 16) & 0xFF) * shadeR);
+                int g = (int) (((color >> 8) & 0xFF) * shadeG);
+                int b = (int) ((color & 0xFF) * shadeB);
+                int a = (color >> 24) & 0xFF;
+                int finalColor = (a << 24) | (r << 16) | (g << 8) | b;
 
-                // UV - remap from old sprite to new sprite
+                // Remap UV coordinates to new sprite
                 float oldU = Float.intBitsToFloat(vertexData[idx + 4]);
                 float oldV = Float.intBitsToFloat(vertexData[idx + 5]);
 
@@ -137,17 +143,17 @@ public class CopyBlockRenderer implements BlockEntityRenderer<CopyBlockEntity> {
                 float newU = sprite.getU0() + relativeU * (sprite.getU1() - sprite.getU0());
                 float newV = sprite.getV0() + relativeV * (sprite.getV1() - sprite.getV0());
 
-                // Normal (packed as byte)
+                // Extract normal
                 int packedNormal = vertexData[idx + 7];
                 byte nx = (byte) (packedNormal & 0xFF);
                 byte ny = (byte) ((packedNormal >> 8) & 0xFF);
                 byte nz = (byte) ((packedNormal >> 16) & 0xFF);
 
                 consumer.vertex(pose.pose(), x, y, z)
-                        .color(color)
+                        .color(finalColor)
                         .uv(newU, newV)
                         .overlayCoords(packedOverlay)
-                        .uv2(packedLight)  // Same light for all vertices in this quad
+                        .uv2(combinedLight)
                         .normal(pose.normal(), nx / 127.0f, ny / 127.0f, nz / 127.0f)
                         .endVertex();
             }
