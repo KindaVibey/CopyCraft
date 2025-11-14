@@ -19,11 +19,15 @@ import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.client.model.data.ModelProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CopyBlockModel implements BakedModel {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static final ModelProperty<BlockState> COPIED_STATE = new ModelProperty<>();
     public static final ModelProperty<Integer> VIRTUAL_ROTATION = new ModelProperty<>();
 
@@ -31,6 +35,7 @@ public class CopyBlockModel implements BakedModel {
 
     public CopyBlockModel(BakedModel baseModel) {
         this.baseModel = baseModel;
+        LOGGER.info("CopyBlockModel created");
     }
 
     @NotNull
@@ -47,11 +52,6 @@ public class CopyBlockModel implements BakedModel {
 
         BlockState copiedState = data.get(COPIED_STATE);
         Integer virtualRotation = data.get(VIRTUAL_ROTATION);
-
-        // Debug logging
-        if (copiedState != null && !copiedState.isAir()) {
-            System.out.println("CopyBlockModel rendering - Side: " + side + ", Copied: " + copiedState.getBlock().getName().getString() + ", Rotation: " + virtualRotation);
-        }
 
         if (copiedState == null || copiedState.isAir()) {
             // Default to oak planks
@@ -74,10 +74,10 @@ public class CopyBlockModel implements BakedModel {
                 .getBlockRenderer()
                 .getBlockModel(copiedState);
 
-        // Apply virtual rotation to determine which face to get texture from
-        Direction textureFace = applyVirtualRotation(side, virtualRotation);
+        // Apply log-style rotation to determine which face to get texture from
+        Direction textureFace = applyLogRotation(side, virtualRotation);
 
-        System.out.println("  Original side: " + side + " -> Texture from: " + textureFace);
+        LOGGER.debug("Rendering - Side: {}, Rotation: {}, Texture from: {}", side, virtualRotation, textureFace);
 
         // Get the texture sprite for the rotated face from the copied block
         List<BakedQuad> copiedQuads = copiedModel.getQuads(copiedState, textureFace, rand, ModelData.EMPTY, renderType);
@@ -104,76 +104,36 @@ public class CopyBlockModel implements BakedModel {
         return remappedQuads;
     }
 
-    private Direction applyVirtualRotation(@Nullable Direction face, int rotation) {
+    /**
+     * Simple log-style rotation: rotates the texture 90 degrees around different axes
+     * rotation 0 = Y-axis (normal orientation, top/bottom stay top/bottom)
+     * rotation 1 = Z-axis (rotated forward, was-top becomes front)
+     * rotation 2 = X-axis (rotated sideways, was-top becomes right)
+     */
+    private Direction applyLogRotation(@Nullable Direction face, int rotation) {
         if (face == null || rotation == 0) {
             return face;
         }
 
-        // Full 24-orientation rotation system
-        // First digit (0-5): which face is "up"
-        // Second digit (0-3): rotation around that axis
-
-        int upFace = rotation / 4;  // 0-5: which original face becomes UP
-        int spin = rotation % 4;     // 0-3: rotation around the up axis
-
-        // Step 1: Determine which original face we need based on what's "up"
-        Direction originalFace = face;
-
-        // Map current face based on which face is rotated to UP
-        originalFace = switch (upFace) {
-            case 0 -> face; // Normal: UP is UP
-            case 1 -> switch (face) { // DOWN is UP (flipped upside down)
-                case UP -> Direction.DOWN;
-                case DOWN -> Direction.UP;
-                case NORTH -> Direction.SOUTH;
-                case SOUTH -> Direction.NORTH;
-                default -> face;
-            };
-            case 2 -> switch (face) { // NORTH is UP
-                case UP -> Direction.SOUTH;
-                case DOWN -> Direction.NORTH;
-                case NORTH -> Direction.UP;
-                case SOUTH -> Direction.DOWN;
-                default -> face;
-            };
-            case 3 -> switch (face) { // SOUTH is UP
-                case UP -> Direction.NORTH;
-                case DOWN -> Direction.SOUTH;
-                case NORTH -> Direction.DOWN;
-                case SOUTH -> Direction.UP;
-                default -> face;
-            };
-            case 4 -> switch (face) { // EAST is UP
-                case UP -> Direction.WEST;
-                case DOWN -> Direction.EAST;
-                case EAST -> Direction.UP;
-                case WEST -> Direction.DOWN;
-                default -> face;
-            };
-            case 5 -> switch (face) { // WEST is UP
-                case UP -> Direction.EAST;
-                case DOWN -> Direction.WEST;
-                case EAST -> Direction.DOWN;
-                case WEST -> Direction.UP;
-                default -> face;
-            };
+        return switch (rotation) {
+            case 1 -> // Z-axis orientation (like log facing north/south)
+                    switch (face) {
+                        case UP -> Direction.SOUTH;      // Top becomes front
+                        case DOWN -> Direction.NORTH;    // Bottom becomes back
+                        case NORTH -> Direction.DOWN;    // Back becomes bottom
+                        case SOUTH -> Direction.UP;      // Front becomes top
+                        case EAST, WEST -> face;         // Sides stay sides
+                    };
+            case 2 -> // X-axis orientation (like log facing east/west)
+                    switch (face) {
+                        case UP -> Direction.EAST;       // Top becomes right
+                        case DOWN -> Direction.WEST;     // Bottom becomes left
+                        case EAST -> Direction.DOWN;     // Right becomes bottom
+                        case WEST -> Direction.UP;       // Left becomes top
+                        case NORTH, SOUTH -> face;       // Front/back stay front/back
+                    };
             default -> face;
         };
-
-        // Step 2: Apply spin around the vertical axis
-        if (spin > 0 && originalFace != Direction.UP && originalFace != Direction.DOWN) {
-            for (int i = 0; i < spin; i++) {
-                originalFace = switch (originalFace) {
-                    case NORTH -> Direction.EAST;
-                    case EAST -> Direction.SOUTH;
-                    case SOUTH -> Direction.WEST;
-                    case WEST -> Direction.NORTH;
-                    default -> originalFace;
-                };
-            }
-        }
-
-        return originalFace;
     }
 
     private BakedQuad remapQuadTexture(BakedQuad originalQuad, TextureAtlasSprite newSprite) {
@@ -216,9 +176,10 @@ public class CopyBlockModel implements BakedModel {
                                   @NotNull BlockState state, @NotNull ModelData modelData) {
 
         if (level.getBlockEntity(pos) instanceof CopyBlockEntity be) {
-            System.out.println("getModelData called at " + pos + " - Has copied: " + be.hasCopiedBlock() + ", Rotation: " + be.getVirtualRotation());
-
             if (be.hasCopiedBlock()) {
+                LOGGER.debug("getModelData at {} - Block: {}, Rotation: {}",
+                        pos, be.getCopiedBlock().getBlock().getName().getString(), be.getVirtualRotation());
+
                 return ModelData.builder()
                         .with(COPIED_STATE, be.getCopiedBlock())
                         .with(VIRTUAL_ROTATION, be.getVirtualRotation())

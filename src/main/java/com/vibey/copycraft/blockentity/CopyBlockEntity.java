@@ -1,5 +1,6 @@
 package com.vibey.copycraft.blockentity;
 
+import com.vibey.copycraft.client.ClientEventsHandler;
 import com.vibey.copycraft.client.CopyBlockModel;
 import com.vibey.copycraft.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -13,17 +14,21 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 public class CopyBlockEntity extends BlockEntity {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private BlockState copiedBlock = Blocks.AIR.defaultBlockState();
-    private int virtualRotation = 0; // 0 = normal, 1 = Z-axis, 2 = X-axis
+    private int virtualRotation = 0; // 0 = Y-axis (normal), 1 = Z-axis, 2 = X-axis
 
     public CopyBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.COPY_BLOCK_ENTITY.get(), pos, blockState);
@@ -38,69 +43,39 @@ public class CopyBlockEntity extends BlockEntity {
     }
 
     public void setCopiedBlock(BlockState newBlock) {
-        System.out.println("setCopiedBlock called - Current: " + copiedBlock.getBlock().getName().getString() + ", New: " + newBlock.getBlock().getName().getString());
+        LOGGER.info("setCopiedBlock called - Current: {}, New: {}",
+                copiedBlock.getBlock().getName().getString(),
+                newBlock.getBlock().getName().getString());
 
         // If it's the same block, rotate it
         if (!copiedBlock.isAir() && copiedBlock.getBlock() == newBlock.getBlock()) {
             rotateBlock();
-            System.out.println("  Rotating! New rotation: " + virtualRotation);
+            LOGGER.info("Rotating! New rotation: {}", virtualRotation);
         } else {
             // New block, reset rotation
             this.copiedBlock = newBlock;
             this.virtualRotation = 0;
-            System.out.println("  New block copied!");
+            LOGGER.info("New block copied!");
         }
 
         setChanged();
 
         if (level != null && !level.isClientSide) {
-            // Server: sync to all clients with immediate render update
-            System.out.println("  Server sending update");
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+            LOGGER.info("Server sending update packet and forcing chunk update");
+            // Mark block for update
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
+                    Block.UPDATE_ALL);
+            // Also notify neighbors to ensure render update
+            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
         }
-
-        // Always request model data update on both sides
-        System.out.println("  Requesting model data update");
-        requestModelDataUpdate();
     }
 
     private void rotateBlock() {
-        // Check if block has AXIS property (logs, pillars, etc.)
-        if (copiedBlock.hasProperty(BlockStateProperties.AXIS)) {
-            Direction.Axis currentAxis = copiedBlock.getValue(BlockStateProperties.AXIS);
-            Direction.Axis newAxis = switch (currentAxis) {
-                case Y -> Direction.Axis.Z;
-                case Z -> Direction.Axis.X;
-                case X -> Direction.Axis.Y;
-            };
-            copiedBlock = copiedBlock.setValue(BlockStateProperties.AXIS, newAxis);
-            virtualRotation = 0; // Reset virtual rotation when using real rotation
-        }
-        // Check if block has FACING property (furnaces, etc.)
-        else if (copiedBlock.hasProperty(BlockStateProperties.FACING)) {
-            Direction currentFacing = copiedBlock.getValue(BlockStateProperties.FACING);
-            Direction newFacing = switch (currentFacing) {
-                case NORTH -> Direction.EAST;
-                case EAST -> Direction.SOUTH;
-                case SOUTH -> Direction.WEST;
-                case WEST -> Direction.UP;
-                case UP -> Direction.DOWN;
-                case DOWN -> Direction.NORTH;
-            };
-            copiedBlock = copiedBlock.setValue(BlockStateProperties.FACING, newFacing);
-            virtualRotation = 0;
-        }
-        // Check if block has HORIZONTAL_FACING
-        else if (copiedBlock.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            Direction currentFacing = copiedBlock.getValue(BlockStateProperties.HORIZONTAL_FACING);
-            Direction newFacing = currentFacing.getClockWise();
-            copiedBlock = copiedBlock.setValue(BlockStateProperties.HORIZONTAL_FACING, newFacing);
-            virtualRotation = 0;
-        }
-        // No rotation property - use virtual rotation
-        else {
-            virtualRotation = (virtualRotation + 1) % 3;
-        }
+        // Simple 3-axis rotation like logs: Y -> Z -> X -> Y
+        virtualRotation = (virtualRotation + 1) % 3;
+        LOGGER.info("Virtual rotation changed to: {} ({})",
+                virtualRotation,
+                virtualRotation == 0 ? "Y-axis" : virtualRotation == 1 ? "Z-axis" : "X-axis");
     }
 
     public boolean hasCopiedBlock() {
@@ -110,10 +85,15 @@ public class CopyBlockEntity extends BlockEntity {
     @NotNull
     @Override
     public ModelData getModelData() {
-        return ModelData.builder()
+        ModelData data = ModelData.builder()
                 .with(CopyBlockModel.COPIED_STATE, copiedBlock)
                 .with(CopyBlockModel.VIRTUAL_ROTATION, virtualRotation)
                 .build();
+
+        LOGGER.debug("getModelData returning - Block: {}, Rotation: {}",
+                copiedBlock.getBlock().getName().getString(), virtualRotation);
+
+        return data;
     }
 
     @Override
@@ -134,10 +114,11 @@ public class CopyBlockEntity extends BlockEntity {
                                 tag.getCompound("CopiedBlock")
                         );
                     } catch (Exception e) {
-                        // Keep the default state from registry
+                        LOGGER.warn("Failed to read block state properties", e);
                     }
                 }
             } catch (Exception e) {
+                LOGGER.error("Failed to load copied block", e);
                 this.copiedBlock = Blocks.AIR.defaultBlockState();
             }
         } else if (tag.contains("CopiedBlock")) {
@@ -147,11 +128,15 @@ public class CopyBlockEntity extends BlockEntity {
                         tag.getCompound("CopiedBlock")
                 );
             } catch (Exception e) {
+                LOGGER.error("Failed to load copied block", e);
                 this.copiedBlock = Blocks.AIR.defaultBlockState();
             }
         }
 
         this.virtualRotation = tag.getInt("VirtualRotation");
+
+        LOGGER.info("Loaded block entity - Block: {}, Rotation: {}",
+                copiedBlock.getBlock().getName().getString(), virtualRotation);
 
         if (level != null && level.isClientSide) {
             requestModelDataUpdate();
@@ -160,7 +145,23 @@ public class CopyBlockEntity extends BlockEntity {
 
     @Override
     public void handleUpdateTag(CompoundTag tag) {
+        LOGGER.info("handleUpdateTag called");
+        BlockState oldState = this.copiedBlock;
+        int oldRotation = this.virtualRotation;
+
         load(tag);
+
+        // If data changed and we're on client, request render update
+        if (level != null && level.isClientSide &&
+                (!oldState.equals(this.copiedBlock) || oldRotation != this.virtualRotation)) {
+            LOGGER.info("Data changed, requesting model update");
+            requestModelDataUpdate();
+
+            // Queue the block for render update
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                    ClientEventsHandler.queueBlockUpdate(worldPosition)
+            );
+        }
     }
 
     @Override
@@ -180,12 +181,42 @@ public class CopyBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
+        LOGGER.info("getUpdateTag - Block: {}, Rotation: {}",
+                copiedBlock.getBlock().getName().getString(), virtualRotation);
         return tag;
     }
 
     @Nullable
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
+        LOGGER.info("getUpdatePacket called");
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(net.minecraft.network.Connection net, ClientboundBlockEntityDataPacket pkt) {
+        LOGGER.info("onDataPacket received on client");
+        CompoundTag tag = pkt.getTag();
+        if (tag != null) {
+            BlockState oldState = this.copiedBlock;
+            int oldRotation = this.virtualRotation;
+
+            handleUpdateTag(tag);
+
+            // Force model data update and chunk re-render on client
+            if (level != null && level.isClientSide) {
+                LOGGER.info("Client forcing model data refresh and chunk re-render");
+                requestModelDataUpdate();
+
+                // Queue the block for render update
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                        ClientEventsHandler.queueBlockUpdate(worldPosition)
+                );
+
+                // Mark the block for re-render
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
+                        Block.UPDATE_ALL_IMMEDIATE);
+            }
+        }
     }
 }

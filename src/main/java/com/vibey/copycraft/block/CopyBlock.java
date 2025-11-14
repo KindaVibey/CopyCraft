@@ -17,8 +17,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 public class CopyBlock extends Block implements EntityBlock {
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public CopyBlock(Properties properties) {
         super(properties);
@@ -26,7 +29,6 @@ public class CopyBlock extends Block implements EntityBlock {
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        // MODEL allows it to be rendered in the world via BakedModel
         return RenderShape.MODEL;
     }
 
@@ -40,23 +42,28 @@ public class CopyBlock extends Block implements EntityBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos,
                                  Player player, InteractionHand hand, BlockHitResult hit) {
 
+        LOGGER.info("CopyBlock.use called - Client: {}", level.isClientSide);
+
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (!(blockEntity instanceof CopyBlockEntity copyBlockEntity)) {
+            LOGGER.warn("BlockEntity at {} is not CopyBlockEntity!", pos);
             return InteractionResult.PASS;
         }
 
         ItemStack heldItem = player.getItemInHand(hand);
 
+        // Clear with shift + empty hand
         if (player.isShiftKeyDown() && heldItem.isEmpty()) {
             copyBlockEntity.setCopiedBlock(Blocks.AIR.defaultBlockState());
             player.displayClientMessage(Component.literal("Cleared copied texture"), true);
             return InteractionResult.SUCCESS;
         }
 
+        // Copy or rotate with block in hand
         if (heldItem.getItem() instanceof BlockItem blockItem) {
             Block targetBlock = blockItem.getBlock();
 
@@ -75,19 +82,26 @@ public class CopyBlock extends Block implements EntityBlock {
             // Check if clicking with same block - if so, rotate
             BlockState currentCopied = copyBlockEntity.getCopiedBlock();
             if (!currentCopied.isAir() && currentCopied.getBlock() == targetBlock) {
+                LOGGER.info("Same block clicked - rotating");
                 copyBlockEntity.setCopiedBlock(targetState);
-                player.displayClientMessage(Component.literal("Rotated texture"), true);
+
+                String rotationName = switch (copyBlockEntity.getVirtualRotation()) {
+                    case 0 -> "Y-axis (vertical)";
+                    case 1 -> "Z-axis (north-south)";
+                    case 2 -> "X-axis (east-west)";
+                    default -> "unknown";
+                };
+
+                player.displayClientMessage(Component.literal("Rotated to " + rotationName), true);
             } else {
                 // New block
+                LOGGER.info("New block being copied: {}", targetBlock.getName().getString());
                 copyBlockEntity.setCopiedBlock(targetState);
                 player.displayClientMessage(
                         Component.literal("Copied texture from: " + targetBlock.getName().getString()),
                         true
                 );
             }
-
-            // Single update call with proper flags
-            level.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS | Block.UPDATE_IMMEDIATE);
 
             return InteractionResult.SUCCESS;
         }
