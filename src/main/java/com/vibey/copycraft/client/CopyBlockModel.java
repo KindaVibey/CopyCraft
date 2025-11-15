@@ -13,20 +13,18 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.ChunkRenderTypeSet;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.client.model.data.ModelProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CopyBlockModel implements BakedModel {
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final ModelProperty<BlockState> COPIED_STATE = new ModelProperty<>();
     public static final ModelProperty<Integer> VIRTUAL_ROTATION = new ModelProperty<>();
@@ -35,7 +33,6 @@ public class CopyBlockModel implements BakedModel {
 
     public CopyBlockModel(BakedModel baseModel) {
         this.baseModel = baseModel;
-        LOGGER.info("CopyBlockModel created");
     }
 
     @NotNull
@@ -53,21 +50,17 @@ public class CopyBlockModel implements BakedModel {
         BlockState copiedState = data.get(COPIED_STATE);
         Integer virtualRotation = data.get(VIRTUAL_ROTATION);
 
+        // Get the base model quads for our copy block
+        List<BakedQuad> baseQuads = baseModel.getQuads(state, side, rand, ModelData.EMPTY, renderType);
+
+        // If no copied state or it's AIR, return base quads (default texture)
         if (copiedState == null || copiedState.isAir()) {
-            // Default to oak planks
-            BlockState defaultState = Blocks.OAK_PLANKS.defaultBlockState();
-            BakedModel defaultModel = Minecraft.getInstance()
-                    .getBlockRenderer()
-                    .getBlockModel(defaultState);
-            return defaultModel.getQuads(defaultState, side, rand, ModelData.EMPTY, renderType);
+            return baseQuads;
         }
 
         if (virtualRotation == null) {
             virtualRotation = 0;
         }
-
-        // Get the base model quads for our copy block
-        List<BakedQuad> baseQuads = baseModel.getQuads(state, side, rand, ModelData.EMPTY, renderType);
 
         // Get the copied block's model
         BakedModel copiedModel = Minecraft.getInstance()
@@ -76,8 +69,6 @@ public class CopyBlockModel implements BakedModel {
 
         // Apply log-style rotation to determine which face to get texture from
         Direction textureFace = applyLogRotation(side, virtualRotation);
-
-        LOGGER.debug("Rendering - Side: {}, Rotation: {}, Texture from: {}", side, virtualRotation, textureFace);
 
         // Get the texture sprite for the rotated face from the copied block
         List<BakedQuad> copiedQuads = copiedModel.getQuads(copiedState, textureFace, rand, ModelData.EMPTY, renderType);
@@ -175,19 +166,24 @@ public class CopyBlockModel implements BakedModel {
     public ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos,
                                   @NotNull BlockState state, @NotNull ModelData modelData) {
 
-        if (level.getBlockEntity(pos) instanceof CopyBlockEntity be) {
-            if (be.hasCopiedBlock()) {
-                LOGGER.debug("getModelData at {} - Block: {}, Rotation: {}",
-                        pos, be.getCopiedBlock().getBlock().getName().getString(), be.getVirtualRotation());
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            int rotation = copyBE.getVirtualRotation();
 
-                return ModelData.builder()
-                        .with(COPIED_STATE, be.getCopiedBlock())
-                        .with(VIRTUAL_ROTATION, be.getVirtualRotation())
-                        .build();
-            }
+            // ALWAYS build new ModelData - never return EMPTY or cached data
+            // This ensures AIR states are properly represented
+            return ModelData.builder()
+                    .with(COPIED_STATE, copiedState != null ? copiedState : Blocks.AIR.defaultBlockState())
+                    .with(VIRTUAL_ROTATION, rotation)
+                    .build();
         }
 
-        return ModelData.EMPTY;
+        // Fallback: return AIR state rather than EMPTY
+        return ModelData.builder()
+                .with(COPIED_STATE, Blocks.AIR.defaultBlockState())
+                .with(VIRTUAL_ROTATION, 0)
+                .build();
     }
 
     @Override

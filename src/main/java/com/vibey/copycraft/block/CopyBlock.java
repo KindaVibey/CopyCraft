@@ -2,9 +2,9 @@ package com.vibey.copycraft.block;
 
 import com.vibey.copycraft.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -17,11 +17,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 
 public class CopyBlock extends Block implements EntityBlock {
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public CopyBlock(Properties properties) {
         super(properties);
@@ -42,68 +39,71 @@ public class CopyBlock extends Block implements EntityBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos,
                                  Player player, InteractionHand hand, BlockHitResult hit) {
 
-        LOGGER.info("CopyBlock.use called - Client: {}", level.isClientSide);
-
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (!(blockEntity instanceof CopyBlockEntity copyBlockEntity)) {
-            LOGGER.warn("BlockEntity at {} is not CopyBlockEntity!", pos);
             return InteractionResult.PASS;
         }
 
         ItemStack heldItem = player.getItemInHand(hand);
+        BlockState currentCopied = copyBlockEntity.getCopiedBlock();
 
-        // Clear with shift + empty hand
+        // Shift + empty hand = remove texture and drop the copied block
         if (player.isShiftKeyDown() && heldItem.isEmpty()) {
-            copyBlockEntity.setCopiedBlock(Blocks.AIR.defaultBlockState());
-            player.displayClientMessage(Component.literal("Cleared copied texture"), true);
+            if (!currentCopied.isAir()) {
+                // Drop the copied block item in the world with no pickup delay
+                // This bypasses inventory desync and allows proper stacking
+                ItemStack droppedItem = new ItemStack(currentCopied.getBlock().asItem(), 1);
+                ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, droppedItem);
+                itemEntity.setNoPickUpDelay(); // Instant pickup - will stack properly
+                level.addFreshEntity(itemEntity);
+
+                // Clear the texture
+                copyBlockEntity.setCopiedBlock(Blocks.AIR.defaultBlockState());
+
+                // Force neighbor updates to trigger chunk rebuild
+                state.updateNeighbourShapes(level, pos, Block.UPDATE_ALL);
+                level.updateNeighborsAt(pos, state.getBlock());
+            }
+
             return InteractionResult.SUCCESS;
         }
 
-        // Copy or rotate with block in hand
+        // Block in hand
         if (heldItem.getItem() instanceof BlockItem blockItem) {
             Block targetBlock = blockItem.getBlock();
 
             if (targetBlock instanceof CopyBlock) {
-                player.displayClientMessage(Component.literal("Cannot copy a Copy Block!"), true);
                 return InteractionResult.FAIL;
             }
 
             BlockState targetState = targetBlock.defaultBlockState();
 
             if (!targetState.isCollisionShapeFullBlock(level, pos)) {
-                player.displayClientMessage(Component.literal("Can only copy full block textures!"), true);
                 return InteractionResult.FAIL;
             }
 
-            // Check if clicking with same block - if so, rotate
-            BlockState currentCopied = copyBlockEntity.getCopiedBlock();
-            if (!currentCopied.isAir() && currentCopied.getBlock() == targetBlock) {
-                LOGGER.info("Same block clicked - rotating");
-                copyBlockEntity.setCopiedBlock(targetState);
-
-                String rotationName = switch (copyBlockEntity.getVirtualRotation()) {
-                    case 0 -> "Y-axis (vertical)";
-                    case 1 -> "Z-axis (north-south)";
-                    case 2 -> "X-axis (east-west)";
-                    default -> "unknown";
-                };
-
-                player.displayClientMessage(Component.literal("Rotated to " + rotationName), true);
+            // If already has a texture, check if it's the same block for rotation
+            if (!currentCopied.isAir()) {
+                // Same block = rotate
+                if (currentCopied.getBlock() == targetBlock) {
+                    copyBlockEntity.setCopiedBlock(targetState);
+                    return InteractionResult.SUCCESS;
+                } else {
+                    // Different block = can't switch, must clear first
+                    return InteractionResult.FAIL;
+                }
             } else {
-                // New block
-                LOGGER.info("New block being copied: {}", targetBlock.getName().getString());
+                // Empty block = copy new texture and consume one item
+                if (!player.isCreative()) {
+                    heldItem.shrink(1);
+                }
                 copyBlockEntity.setCopiedBlock(targetState);
-                player.displayClientMessage(
-                        Component.literal("Copied texture from: " + targetBlock.getName().getString()),
-                        true
-                );
+                return InteractionResult.SUCCESS;
             }
-
-            return InteractionResult.SUCCESS;
         }
 
         return InteractionResult.PASS;
@@ -113,7 +113,38 @@ public class CopyBlock extends Block implements EntityBlock {
     public void onRemove(BlockState state, Level level, BlockPos pos,
                          BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
+            // Only drop the copied block if broken in survival mode
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof CopyBlockEntity copyBlockEntity) {
+                BlockState copiedBlock = copyBlockEntity.getCopiedBlock();
+                if (!copiedBlock.isAir()) {
+                    // Check if a player broke it and if they're in creative
+                    // We'll drop the item unless explicitly prevented
+                    // Since we can't easily check player mode here, we'll use a flag
+                    Boolean droppedByCreative = level.getBlockEntity(pos) instanceof CopyBlockEntity be ?
+                            be.wasRemovedByCreative() : false;
+
+                    if (!droppedByCreative) {
+                        ItemStack droppedItem = new ItemStack(copiedBlock.getBlock().asItem(), 1);
+                        ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, droppedItem);
+                        level.addFreshEntity(itemEntity);
+                    }
+                }
+            }
+
             super.onRemove(state, level, pos, newState, isMoving);
         }
+    }
+
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        // Mark if broken by creative player
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof CopyBlockEntity copyBlockEntity) {
+            if (player.isCreative()) {
+                copyBlockEntity.setRemovedByCreative(true);
+            }
+        }
+        super.playerWillDestroy(level, pos, state, player);
     }
 }

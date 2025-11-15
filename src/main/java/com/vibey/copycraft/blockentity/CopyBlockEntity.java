@@ -4,7 +4,6 @@ import com.vibey.copycraft.client.ClientEventsHandler;
 import com.vibey.copycraft.client.CopyBlockModel;
 import com.vibey.copycraft.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -21,14 +20,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
 
 public class CopyBlockEntity extends BlockEntity {
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     private BlockState copiedBlock = Blocks.AIR.defaultBlockState();
     private int virtualRotation = 0; // 0 = Y-axis (normal), 1 = Z-axis, 2 = X-axis
+    private boolean removedByCreative = false;
 
     public CopyBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.COPY_BLOCK_ENTITY.get(), pos, blockState);
@@ -42,30 +39,30 @@ public class CopyBlockEntity extends BlockEntity {
         return virtualRotation;
     }
 
-    public void setCopiedBlock(BlockState newBlock) {
-        LOGGER.info("setCopiedBlock called - Current: {}, New: {}",
-                copiedBlock.getBlock().getName().getString(),
-                newBlock.getBlock().getName().getString());
+    public boolean wasRemovedByCreative() {
+        return removedByCreative;
+    }
 
+    public void setRemovedByCreative(boolean value) {
+        this.removedByCreative = value;
+    }
+
+    public void setCopiedBlock(BlockState newBlock) {
         // If it's the same block, rotate it
-        if (!copiedBlock.isAir() && copiedBlock.getBlock() == newBlock.getBlock()) {
+        if (!copiedBlock.isAir() && !newBlock.isAir() && copiedBlock.getBlock() == newBlock.getBlock()) {
             rotateBlock();
-            LOGGER.info("Rotating! New rotation: {}", virtualRotation);
         } else {
-            // New block, reset rotation
+            // New block or clearing, reset rotation
             this.copiedBlock = newBlock;
             this.virtualRotation = 0;
-            LOGGER.info("New block copied!");
         }
 
         setChanged();
 
         if (level != null && !level.isClientSide) {
-            LOGGER.info("Server sending update packet and forcing chunk update");
-            // Mark block for update
+            // Server: Send update packet to all clients
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
                     Block.UPDATE_ALL);
-            // Also notify neighbors to ensure render update
             level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
         }
     }
@@ -73,9 +70,6 @@ public class CopyBlockEntity extends BlockEntity {
     private void rotateBlock() {
         // Simple 3-axis rotation like logs: Y -> Z -> X -> Y
         virtualRotation = (virtualRotation + 1) % 3;
-        LOGGER.info("Virtual rotation changed to: {} ({})",
-                virtualRotation,
-                virtualRotation == 0 ? "Y-axis" : virtualRotation == 1 ? "Z-axis" : "X-axis");
     }
 
     public boolean hasCopiedBlock() {
@@ -85,20 +79,18 @@ public class CopyBlockEntity extends BlockEntity {
     @NotNull
     @Override
     public ModelData getModelData() {
-        ModelData data = ModelData.builder()
+        // Always return fresh data with current state
+        return ModelData.builder()
                 .with(CopyBlockModel.COPIED_STATE, copiedBlock)
                 .with(CopyBlockModel.VIRTUAL_ROTATION, virtualRotation)
                 .build();
-
-        LOGGER.debug("getModelData returning - Block: {}, Rotation: {}",
-                copiedBlock.getBlock().getName().getString(), virtualRotation);
-
-        return data;
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
+
+        BlockState oldCopied = this.copiedBlock;
 
         if (tag.contains("CopiedBlockId")) {
             try {
@@ -114,11 +106,10 @@ public class CopyBlockEntity extends BlockEntity {
                                 tag.getCompound("CopiedBlock")
                         );
                     } catch (Exception e) {
-                        LOGGER.warn("Failed to read block state properties", e);
+                        // Keep the default state from registry
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("Failed to load copied block", e);
                 this.copiedBlock = Blocks.AIR.defaultBlockState();
             }
         } else if (tag.contains("CopiedBlock")) {
@@ -128,33 +119,30 @@ public class CopyBlockEntity extends BlockEntity {
                         tag.getCompound("CopiedBlock")
                 );
             } catch (Exception e) {
-                LOGGER.error("Failed to load copied block", e);
                 this.copiedBlock = Blocks.AIR.defaultBlockState();
             }
+        } else {
+            // No data means it should be AIR
+            this.copiedBlock = Blocks.AIR.defaultBlockState();
         }
 
         this.virtualRotation = tag.getInt("VirtualRotation");
 
-        LOGGER.info("Loaded block entity - Block: {}, Rotation: {}",
-                copiedBlock.getBlock().getName().getString(), virtualRotation);
-
         if (level != null && level.isClientSide) {
+            // Force invalidate and refresh model data
             requestModelDataUpdate();
         }
     }
 
     @Override
     public void handleUpdateTag(CompoundTag tag) {
-        LOGGER.info("handleUpdateTag called");
         BlockState oldState = this.copiedBlock;
         int oldRotation = this.virtualRotation;
 
         load(tag);
 
         // If data changed and we're on client, request render update
-        if (level != null && level.isClientSide &&
-                (!oldState.equals(this.copiedBlock) || oldRotation != this.virtualRotation)) {
-            LOGGER.info("Data changed, requesting model update");
+        if (level != null && level.isClientSide) {
             requestModelDataUpdate();
 
             // Queue the block for render update
@@ -181,31 +169,27 @@ public class CopyBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
         saveAdditional(tag);
-        LOGGER.info("getUpdateTag - Block: {}, Rotation: {}",
-                copiedBlock.getBlock().getName().getString(), virtualRotation);
         return tag;
     }
 
     @Nullable
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
-        LOGGER.info("getUpdatePacket called");
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
     public void onDataPacket(net.minecraft.network.Connection net, ClientboundBlockEntityDataPacket pkt) {
-        LOGGER.info("onDataPacket received on client");
         CompoundTag tag = pkt.getTag();
         if (tag != null) {
-            BlockState oldState = this.copiedBlock;
-            int oldRotation = this.virtualRotation;
+            // Store old values for comparison
+            BlockState oldCopied = this.copiedBlock;
 
             handleUpdateTag(tag);
 
             // Force model data update and chunk re-render on client
             if (level != null && level.isClientSide) {
-                LOGGER.info("Client forcing model data refresh and chunk re-render");
+                // ALWAYS force update when receiving packet
                 requestModelDataUpdate();
 
                 // Queue the block for render update
@@ -213,9 +197,18 @@ public class CopyBlockEntity extends BlockEntity {
                         ClientEventsHandler.queueBlockUpdate(worldPosition)
                 );
 
-                // Mark the block for re-render
+                // Mark the block for re-render with all flags
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
                         Block.UPDATE_ALL_IMMEDIATE);
+
+                // If we cleared the block (went from something to AIR), force extra update
+                if (!oldCopied.isAir() && this.copiedBlock.isAir()) {
+                    // Double-queue for AIR updates since they seem to be stubborn
+                    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                        ClientEventsHandler.queueBlockUpdate(worldPosition);
+                        ClientEventsHandler.queueBlockUpdate(worldPosition);
+                    });
+                }
             }
         }
     }
