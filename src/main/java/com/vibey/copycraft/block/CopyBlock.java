@@ -8,6 +8,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -36,6 +38,34 @@ public class CopyBlock extends Block implements EntityBlock {
     }
 
     @Override
+    public float getExplosionResistance(BlockState state, BlockGetter level, BlockPos pos, Explosion explosion) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                // Return the copied block's explosion resistance
+                return copiedState.getBlock().getExplosionResistance();
+            }
+        }
+        // Default to our own explosion resistance
+        return super.getExplosionResistance(state, level, pos, explosion);
+    }
+
+    @Override
+    public float getDestroyProgress(BlockState state, Player player, BlockGetter level, BlockPos pos) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                // Return the copied block's destroy progress (affects mining speed)
+                return copiedState.getDestroyProgress(player, level, pos);
+            }
+        }
+        // Default to our own destroy progress
+        return super.getDestroyProgress(state, player, level, pos);
+    }
+
+    @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos,
                                  Player player, InteractionHand hand, BlockHitResult hit) {
 
@@ -54,11 +84,18 @@ public class CopyBlock extends Block implements EntityBlock {
         // Shift + empty hand = remove texture and drop the copied block
         if (player.isShiftKeyDown() && heldItem.isEmpty()) {
             if (!currentCopied.isAir()) {
-                // Drop the copied block item in the world with no pickup delay
-                // This bypasses inventory desync and allows proper stacking
-                ItemStack droppedItem = new ItemStack(currentCopied.getBlock().asItem(), 1);
+                // Get the block and create a completely clean ItemStack
+                Block copiedBlock = currentCopied.getBlock();
+                ItemStack droppedItem = new ItemStack(copiedBlock, 1);
+
+                // Fix NBT bug: Remove blank NBT tags that prevent stacking
+                if (droppedItem.hasTag() && droppedItem.getTag().isEmpty()) {
+                    droppedItem.setTag(null);
+                }
+
+                // Drop the item in the world with no pickup delay
                 ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, droppedItem);
-                itemEntity.setNoPickUpDelay(); // Instant pickup - will stack properly
+                itemEntity.setNoPickUpDelay();
                 level.addFreshEntity(itemEntity);
 
                 // Clear the texture
