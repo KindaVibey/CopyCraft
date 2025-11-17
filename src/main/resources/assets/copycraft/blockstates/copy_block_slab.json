@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "copycraft:block/copy_block_slab"
+    },
+    "type=top": {
+      "model": "copycraft:block/copy_block_slab_top"
+    },
+    "type=double": {
+      "model": "copycraft:block/copy_block_full"
+    }
+  }
+}

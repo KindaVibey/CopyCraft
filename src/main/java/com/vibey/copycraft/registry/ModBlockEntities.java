@@ -18,6 +18,24 @@ public class ModBlockEntities {
                             ModBlocks.COPY_BLOCK.get()
                     ).build(null));
 
+    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_FULL_ENTITY =
+            BLOCK_ENTITIES.register("copy_block_full_entity", () ->
+                    BlockEntityType.Builder.of(CopyBlockEntity::new,
+                            ModBlocks.COPY_BLOCK_FULL.get()
+                    ).build(null));
+
+    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_SLAB_ENTITY =
+            BLOCK_ENTITIES.register("copy_block_slab_entity", () ->
+                    BlockEntityType.Builder.of(CopyBlockEntity::new,
+                            ModBlocks.COPY_BLOCK_SLAB.get()
+                    ).build(null));
+
+    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_STAIRS_ENTITY =
+            BLOCK_ENTITIES.register("copy_block_stairs_entity", () ->
+                    BlockEntityType.Builder.of(CopyBlockEntity::new,
+                            ModBlocks.COPY_BLOCK_STAIRS.get()
+                    ).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

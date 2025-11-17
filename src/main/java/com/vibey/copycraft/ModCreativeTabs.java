@@ -19,6 +19,9 @@ public class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.copycraft"))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.COPY_BLOCK.get());
+                        output.accept(ModItems.COPY_BLOCK_FULL.get());
+                        output.accept(ModItems.COPY_BLOCK_SLAB.get());
+                        output.accept(ModItems.COPY_BLOCK_STAIRS.get());
                     })
                     .build());
 
