@@ -48,7 +48,6 @@ public class CopyCraft {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("CopyCraft common setup complete!");
 
-        // Register VS2 weights on the main thread
         event.enqueueWork(() -> {
             try {
                 com.vibey.copycraft.vs2.CopyCraftWeights.register();
@@ -79,7 +78,11 @@ public class CopyCraft {
             LOGGER.info("CopyCraft client setup");
 
             event.enqueueWork(() -> {
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK.get(), RenderType.cutout());
+                // FIX: Allow both cutout and translucent render types; model decides per-face
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_FULL.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_SLAB.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_STAIRS.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
             });
         }
     }

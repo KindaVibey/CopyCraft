@@ -43,7 +43,6 @@ public abstract class CopyBlockVariant extends CopyBlock {
         if (be instanceof CopyBlockEntity copyBE) {
             BlockState copiedState = copyBE.getCopiedBlock();
             if (!copiedState.isAir()) {
-                // Get base destroy progress and adjust for mass multiplier
                 // Lower multiplier = easier to break (higher progress per tick)
                 float baseProgress = copiedState.getDestroyProgress(player, level, pos);
                 return baseProgress / massMultiplier;

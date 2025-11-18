@@ -54,9 +54,7 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
                 if (be instanceof CopyBlockEntity copyBE) {
                     BlockState copiedState = copyBE.getCopiedBlock();
                     if (!copiedState.isAir()) {
-                        // Get the mass and type pair from VS
                         Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
-
                         if (info != null) {
                             Double copiedMass = info.getFirst();
                             return copiedMass * copyBlockVariant.getMassMultiplier();
@@ -65,13 +63,29 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
                 }
             }
         }
-
         return null;
     }
 
+    // FIX: Forward BlockType so VS knows how to treat the block
     @Nullable
     @Override
     public BlockType getBlockStateType(BlockState blockState) {
+        if (blockState.getBlock() instanceof CopyBlockVariant) {
+            Level level = currentLevel.get();
+            BlockPos pos = currentPos.get();
+            if (level != null && pos != null) {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof CopyBlockEntity copyBE) {
+                    BlockState copiedState = copyBE.getCopiedBlock();
+                    if (!copiedState.isAir()) {
+                        Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
+                        if (info != null) {
+                            return info.getSecond();
+                        }
+                    }
+                }
+            }
+        }
         return null;
     }
 

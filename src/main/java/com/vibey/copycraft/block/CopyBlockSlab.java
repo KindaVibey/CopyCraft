@@ -78,4 +78,10 @@ public class CopyBlockSlab extends CopyBlockVariant {
             default -> BOTTOM_SHAPE;
         };
     }
+
+    // FIX: Collision shape mirrors visual shape (important for VS physics)
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
 }
