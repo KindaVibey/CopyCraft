@@ -48,6 +48,8 @@ public class CopyBlockEntity extends BlockEntity {
     }
 
     public void setCopiedBlock(BlockState newBlock) {
+        BlockState oldBlock = this.copiedBlock;
+
         // If it's the same block, rotate it
         if (!copiedBlock.isAir() && !newBlock.isAir() && copiedBlock.getBlock() == newBlock.getBlock()) {
             rotateBlock();
@@ -60,7 +62,21 @@ public class CopyBlockEntity extends BlockEntity {
         setChanged();
 
         if (level != null && !level.isClientSide) {
-            // Server: Send update packet to all clients
+            // Server: Invalidate VS cache when texture changes
+            try {
+                com.vibey.copycraft.vs2.CopyCraftWeights.invalidateCache(worldPosition);
+
+                // Force VS to recalculate ship mass if this block is on a ship
+                // This ensures the mass updates immediately
+                if (!oldBlock.isAir() || !newBlock.isAir()) {
+                    System.out.println("CopyBlock texture changed at " + worldPosition +
+                            ": " + oldBlock + " -> " + newBlock);
+                }
+            } catch (NoClassDefFoundError e) {
+                // VS not installed, ignore
+            }
+
+            // Send update packet to all clients
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
                     Block.UPDATE_ALL);
             level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
@@ -209,6 +225,19 @@ public class CopyBlockEntity extends BlockEntity {
                         ClientEventsHandler.queueBlockUpdate(worldPosition);
                     });
                 }
+            }
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        // Clean up VS cache when block entity is removed
+        if (level != null && !level.isClientSide) {
+            try {
+                com.vibey.copycraft.vs2.CopyCraftWeights.invalidateCache(worldPosition);
+            } catch (NoClassDefFoundError e) {
+                // VS not installed, ignore
             }
         }
     }

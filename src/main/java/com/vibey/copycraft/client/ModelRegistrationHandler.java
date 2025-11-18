@@ -2,43 +2,50 @@ package com.vibey.copycraft.client;
 
 import com.vibey.copycraft.CopyCraft;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.event.ModelEvent;
+
+import java.util.Map;
 
 public class ModelRegistrationHandler {
 
     public static void onModelBake(ModelEvent.ModifyBakingResult event) {
         System.out.println("======== MODEL BAKING EVENT ========");
 
-        ResourceLocation[] blockIds = {
-                new ResourceLocation(CopyCraft.MODID, "copy_block"),
-                new ResourceLocation(CopyCraft.MODID, "copy_block_full"),
-                new ResourceLocation(CopyCraft.MODID, "copy_block_slab"),
-                new ResourceLocation(CopyCraft.MODID, "copy_block_stairs")
-        };
+        // Forge 1.20+: models are stored under ResourceLocation, NOT ModelResourceLocation
+        Map<ResourceLocation, BakedModel> modelRegistry = event.getModels();
 
-        for (ResourceLocation blockId : blockIds) {
-            ModelResourceLocation[] locations = {
-                    new ModelResourceLocation(blockId, ""),
-                    new ModelResourceLocation(blockId, "inventory")
-            };
+        int replacedCount = 0;
 
-            boolean foundAny = false;
-            for (ModelResourceLocation loc : locations) {
-                BakedModel existingModel = event.getModels().get(loc);
-                if (existingModel != null) {
-                    event.getModels().put(loc, new CopyBlockModel(existingModel));
-                    System.out.println("Replaced with CopyBlockModel: " + loc);
-                    foundAny = true;
-                } else {
-                    System.out.println("No model at: " + loc);
+        for (Map.Entry<ResourceLocation, BakedModel> entry : modelRegistry.entrySet()) {
+            ResourceLocation id = entry.getKey();
+
+            // Check if this model belongs to our mod
+            if (id.getNamespace().equals(CopyCraft.MODID)) {
+                String path = id.getPath();
+
+                if (path.equals("copy_block") ||
+                        path.equals("copy_block_full") ||
+                        path.equals("copy_block_slab") ||
+                        path.equals("copy_block_slab_top") ||
+                        path.equals("copy_block_stairs")) {
+
+                    BakedModel existingModel = entry.getValue();
+                    CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
+
+                    // Replace the model
+                    modelRegistry.put(id, wrappedModel);
+
+                    System.out.println("✓ Wrapped model: " + id);
+                    replacedCount++;
                 }
             }
+        }
 
-            if (!foundAny) {
-                System.out.println("WARNING: Could not find model for: " + blockId);
-            }
+        System.out.println("======== WRAPPED " + replacedCount + " MODELS ========");
+
+        if (replacedCount == 0) {
+            System.err.println("ERROR: NO MODELS WERE WRAPPED! Check your blockstate JSONs!");
         }
     }
 }

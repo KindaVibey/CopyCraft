@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +37,9 @@ public class CopyBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new CopyBlockEntity(pos, state);
+        CopyBlockEntity entity = new CopyBlockEntity(pos, state);
+        System.out.println("Creating block entity at " + pos + " for state: " + state);
+        return entity;
     }
 
     @Override
@@ -63,17 +66,10 @@ public class CopyBlock extends Block implements EntityBlock {
         return super.getDestroyProgress(state, player, level, pos);
     }
 
-    // FIX: Forward collision shape to copied block (prevents sliding/phasing on VS ships)
+    // Full block collision for stability
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof CopyBlockEntity copyBE) {
-            BlockState copiedState = copyBE.getCopiedBlock();
-            if (!copiedState.isAir()) {
-                return copiedState.getCollisionShape(level, pos, context);
-            }
-        }
-        return super.getCollisionShape(state, level, pos, context);
+        return Shapes.block();
     }
 
     @Override
@@ -86,6 +82,7 @@ public class CopyBlock extends Block implements EntityBlock {
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (!(blockEntity instanceof CopyBlockEntity copyBlockEntity)) {
+            System.out.println("ERROR: No block entity at " + pos + "! Found: " + blockEntity);
             return InteractionResult.PASS;
         }
 
@@ -107,6 +104,7 @@ public class CopyBlock extends Block implements EntityBlock {
                 itemEntity.setNoPickUpDelay();
                 level.addFreshEntity(itemEntity);
 
+                System.out.println("Clearing texture at " + pos);
                 copyBlockEntity.setCopiedBlock(Blocks.AIR.defaultBlockState());
 
                 // Force neighbor updates to trigger chunk rebuild
@@ -134,6 +132,7 @@ public class CopyBlock extends Block implements EntityBlock {
             // If already has a texture, check if it's the same block for rotation
             if (!currentCopied.isAir()) {
                 if (currentCopied.getBlock() == targetBlock) {
+                    System.out.println("Rotating block at " + pos);
                     copyBlockEntity.setCopiedBlock(targetState);
                     return InteractionResult.SUCCESS;
                 } else {
@@ -145,6 +144,7 @@ public class CopyBlock extends Block implements EntityBlock {
                 if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
+                System.out.println("Setting texture at " + pos + " to " + targetState);
                 copyBlockEntity.setCopiedBlock(targetState);
                 return InteractionResult.SUCCESS;
             }

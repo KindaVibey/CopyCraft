@@ -8,21 +8,46 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.valkyrienskies.core.impl.game.ships.ShipObjectServerWorld;
 
+/**
+ * This mixin targets the VS2 assembly code to provide context for mass calculations.
+ * The @Pseudo annotation means this mixin won't cause crashes if VS isn't installed.
+ */
 @Pseudo
-@Mixin(targets = "org.valkyrienskies.mod.common.assembly.ShipAssemblyKt", remap = false)
+@Mixin(targets = {
+        "org.valkyrienskies.mod.common.assembly.ShipAssemblyKt",
+        "org.valkyrienskies.mod.common.assembly.ShipAssemblyKt$getBlockMass"
+}, remap = false)
 public class VSMassContextMixin {
 
-    @Inject(method = "getBlockMass", at = @At("HEAD"), remap = false)
+    /**
+     * Inject at HEAD to set context BEFORE VS queries the mass
+     */
+    @Inject(
+            method = "getBlockMass",
+            at = @At("HEAD"),
+            remap = false,
+            require = 0  // Don't require this mixin to succeed
+    )
     private static void setMassContext(Level level, BlockPos pos, BlockState blockState,
-                                       ShipObjectServerWorld ship, CallbackInfoReturnable<Double> cir) {
+                                       Object ship, CallbackInfoReturnable<Double> cir) {
         CopyCraftWeights.setContext(level, pos);
+        System.out.println("[CopyCraft VS] getBlockMass HEAD: " + blockState + " at " + pos);
     }
 
-    @Inject(method = "getBlockMass", at = @At("RETURN"), remap = false)
+    /**
+     * Inject at RETURN to clear context AFTER VS is done
+     */
+    @Inject(
+            method = "getBlockMass",
+            at = @At("RETURN"),
+            remap = false,
+            require = 0  // Don't require this mixin to succeed
+    )
     private static void clearMassContext(Level level, BlockPos pos, BlockState blockState,
-                                         ShipObjectServerWorld ship, CallbackInfoReturnable<Double> cir) {
+                                         Object ship, CallbackInfoReturnable<Double> cir) {
+        Double result = cir.getReturnValue();
+        System.out.println("[CopyCraft VS] getBlockMass RETURN: " + result + " kg for " + blockState);
         CopyCraftWeights.clearContext();
     }
 }

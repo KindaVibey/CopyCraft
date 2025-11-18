@@ -1,10 +1,12 @@
 package com.vibey.copycraft.block;
 
+import com.vibey.copycraft.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -79,9 +81,25 @@ public class CopyBlockSlab extends CopyBlockVariant {
         };
     }
 
-    // FIX: Collision shape mirrors visual shape (important for VS physics)
+    // FIX: Forward collision shape to copied block when available, otherwise use visual shape
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                // Get the copied block's collision shape
+                VoxelShape copiedShape = copiedState.getCollisionShape(level, pos, context);
+
+                // Scale it based on slab type
+                SlabType type = state.getValue(BlockStateProperties.SLAB_TYPE);
+                if (type == SlabType.DOUBLE) {
+                    return copiedShape; // Full block
+                }
+                // For top/bottom slabs, use our shape (more reliable for VS)
+                return getShape(state, level, pos, context);
+            }
+        }
         return getShape(state, level, pos, context);
     }
 }

@@ -24,8 +24,9 @@ import java.util.List;
 public class CopyCraftWeights implements BlockStateInfoProvider {
     public static final CopyCraftWeights INSTANCE = new CopyCraftWeights();
 
-    private static final ThreadLocal<Level> currentLevel = new ThreadLocal<>();
-    private static final ThreadLocal<BlockPos> currentPos = new ThreadLocal<>();
+    // Made package-private so AlternativeVSMassContextMixin can access them
+    static final ThreadLocal<Level> currentLevel = new ThreadLocal<>();
+    static final ThreadLocal<BlockPos> currentPos = new ThreadLocal<>();
 
     public static void setContext(Level level, BlockPos pos) {
         currentLevel.set(level);
@@ -39,53 +40,92 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
 
     @Override
     public int getPriority() {
-        return 200;
+        // CRITICAL: Must be higher than VS's default priority (100)
+        return 1000;
     }
 
     @Nullable
     @Override
     public Double getBlockStateMass(BlockState blockState) {
-        if (blockState.getBlock() instanceof CopyBlockVariant copyBlockVariant) {
-            Level level = currentLevel.get();
-            BlockPos pos = currentPos.get();
+        System.out.println("[CopyCraft VS] getBlockStateMass called for: " + blockState);
 
-            if (level != null && pos != null) {
-                BlockEntity be = level.getBlockEntity(pos);
-                if (be instanceof CopyBlockEntity copyBE) {
-                    BlockState copiedState = copyBE.getCopiedBlock();
-                    if (!copiedState.isAir()) {
-                        Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
-                        if (info != null) {
-                            Double copiedMass = info.getFirst();
-                            return copiedMass * copyBlockVariant.getMassMultiplier();
-                        }
-                    }
-                }
-            }
+        if (!(blockState.getBlock() instanceof CopyBlockVariant copyBlockVariant)) {
+            System.out.println("[CopyCraft VS] Not a CopyBlockVariant");
+            return null;
         }
-        return null;
+
+        Level level = currentLevel.get();
+        BlockPos pos = currentPos.get();
+
+        if (level == null || pos == null) {
+            System.out.println("[CopyCraft VS] ERROR: No context! level=" + level + " pos=" + pos);
+            return null;
+        }
+
+        System.out.println("[CopyCraft VS] Looking up block entity at " + pos);
+        BlockEntity be = level.getBlockEntity(pos);
+
+        if (!(be instanceof CopyBlockEntity copyBE)) {
+            System.out.println("[CopyCraft VS] ERROR: Wrong block entity type: " + be);
+            return null;
+        }
+
+        BlockState copiedState = copyBE.getCopiedBlock();
+        System.out.println("[CopyCraft VS] Copied state: " + copiedState);
+
+        if (copiedState.isAir()) {
+            System.out.println("[CopyCraft VS] Copied state is AIR, using default mass");
+            return null; // Let VS use default mass
+        }
+
+        // Get the copied block's mass from VS
+        Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
+        if (info == null || info.getFirst() == null) {
+            System.out.println("[CopyCraft VS] No VS info for copied block, using default");
+            return null;
+        }
+
+        Double copiedMass = info.getFirst();
+        float multiplier = copyBlockVariant.getMassMultiplier();
+        double finalMass = copiedMass * multiplier;
+
+        System.out.println("[CopyCraft VS] SUCCESS: " + copiedState + " mass=" + copiedMass +
+                " x " + multiplier + " = " + finalMass + " kg");
+
+        return finalMass;
     }
 
-    // FIX: Forward BlockType so VS knows how to treat the block
     @Nullable
     @Override
     public BlockType getBlockStateType(BlockState blockState) {
-        if (blockState.getBlock() instanceof CopyBlockVariant) {
-            Level level = currentLevel.get();
-            BlockPos pos = currentPos.get();
-            if (level != null && pos != null) {
-                BlockEntity be = level.getBlockEntity(pos);
-                if (be instanceof CopyBlockEntity copyBE) {
-                    BlockState copiedState = copyBE.getCopiedBlock();
-                    if (!copiedState.isAir()) {
-                        Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
-                        if (info != null) {
-                            return info.getSecond();
-                        }
-                    }
-                }
-            }
+        if (!(blockState.getBlock() instanceof CopyBlockVariant)) {
+            return null;
         }
+
+        Level level = currentLevel.get();
+        BlockPos pos = currentPos.get();
+
+        if (level == null || pos == null) {
+            return null;
+        }
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof CopyBlockEntity copyBE)) {
+            return null;
+        }
+
+        BlockState copiedState = copyBE.getCopiedBlock();
+        if (copiedState.isAir()) {
+            return null;
+        }
+
+        Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedState);
+        if (info != null) {
+            BlockType type = info.getSecond();
+            System.out.println("[CopyCraft VS] Block type for " + copiedState + ": " + type);
+            return type;
+        }
+
         return null;
     }
 
@@ -104,11 +144,26 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
         return Collections.emptyList();
     }
 
+    // Dummy methods for compatibility - the simplified version doesn't use caching
+    public static void invalidateCache(BlockPos pos) {
+        // No-op in simplified version
+    }
+
+    public static void cleanCache() {
+        // No-op in simplified version
+    }
+
     public static void register() {
-        Registry.register(
-                BlockStateInfo.INSTANCE.getREGISTRY(),
-                new ResourceLocation(CopyCraft.MODID, "copycraft_weights"),
-                INSTANCE
-        );
+        try {
+            Registry.register(
+                    BlockStateInfo.INSTANCE.getREGISTRY(),
+                    new ResourceLocation(CopyCraft.MODID, "copycraft_weights"),
+                    INSTANCE
+            );
+            System.out.println("[CopyCraft VS] Successfully registered VS2 weights provider with priority 1000!");
+        } catch (Exception e) {
+            System.err.println("[CopyCraft VS] Failed to register weights provider:");
+            e.printStackTrace();
+        }
     }
 }

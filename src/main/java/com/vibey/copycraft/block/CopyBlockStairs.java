@@ -1,5 +1,6 @@
 package com.vibey.copycraft.block;
 
+import com.vibey.copycraft.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -7,6 +8,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -20,14 +22,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Stairs-sized CopyBlock variant (0.75x multiplier)
  */
 public class CopyBlockStairs extends CopyBlockVariant {
-    // Simplified shapes
-    protected static final VoxelShape BOTTOM_SHAPE = Block.box(0, 0, 0, 16, 8, 16);
-    protected static final VoxelShape TOP_SHAPE = Block.box(0, 8, 0, 16, 16, 16);
+    // Proper stair shapes for collision
+    protected static final VoxelShape BOTTOM_AABB = Block.box(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
+    protected static final VoxelShape BOTTOM_NORTH = Shapes.or(BOTTOM_AABB, Block.box(0.0, 8.0, 0.0, 16.0, 16.0, 8.0));
+    protected static final VoxelShape BOTTOM_SOUTH = Shapes.or(BOTTOM_AABB, Block.box(0.0, 8.0, 8.0, 16.0, 16.0, 16.0));
+    protected static final VoxelShape BOTTOM_WEST = Shapes.or(BOTTOM_AABB, Block.box(0.0, 8.0, 0.0, 8.0, 16.0, 16.0));
+    protected static final VoxelShape BOTTOM_EAST = Shapes.or(BOTTOM_AABB, Block.box(8.0, 8.0, 0.0, 16.0, 16.0, 16.0));
 
-    protected static final VoxelShape NORTH_BOTTOM = Shapes.or(
-            Block.box(0, 0, 0, 16, 8, 16),
-            Block.box(0, 8, 0, 16, 16, 8)
-    );
+    protected static final VoxelShape TOP_AABB = Block.box(0.0, 8.0, 0.0, 16.0, 16.0, 16.0);
+    protected static final VoxelShape TOP_NORTH = Shapes.or(TOP_AABB, Block.box(0.0, 0.0, 0.0, 16.0, 8.0, 8.0));
+    protected static final VoxelShape TOP_SOUTH = Shapes.or(TOP_AABB, Block.box(0.0, 0.0, 8.0, 16.0, 8.0, 16.0));
+    protected static final VoxelShape TOP_WEST = Shapes.or(TOP_AABB, Block.box(0.0, 0.0, 0.0, 8.0, 8.0, 16.0));
+    protected static final VoxelShape TOP_EAST = Shapes.or(TOP_AABB, Block.box(8.0, 0.0, 0.0, 16.0, 8.0, 16.0));
 
     public CopyBlockStairs(Properties properties) {
         super(properties, 0.75f);
@@ -148,12 +154,40 @@ public class CopyBlockStairs extends CopyBlockVariant {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(BlockStateProperties.HALF) == Half.BOTTOM ? BOTTOM_SHAPE : TOP_SHAPE;
+        Half half = state.getValue(BlockStateProperties.HALF);
+        Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+
+        if (half == Half.BOTTOM) {
+            return switch (facing) {
+                case NORTH -> BOTTOM_NORTH;
+                case SOUTH -> BOTTOM_SOUTH;
+                case WEST -> BOTTOM_WEST;
+                case EAST -> BOTTOM_EAST;
+                default -> BOTTOM_AABB;
+            };
+        } else {
+            return switch (facing) {
+                case NORTH -> TOP_NORTH;
+                case SOUTH -> TOP_SOUTH;
+                case WEST -> TOP_WEST;
+                case EAST -> TOP_EAST;
+                default -> TOP_AABB;
+            };
+        }
     }
 
-    // FIX: Collision shape mirrors visual shape (important for VS physics)
+    // FIX: Forward collision shape to copied block when available, otherwise use proper stair shape
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                // For stairs, we want to use our stair shape for consistent collision
+                // The copied block's full collision might cause VS issues
+                return getShape(state, level, pos, context);
+            }
+        }
         return getShape(state, level, pos, context);
     }
 }

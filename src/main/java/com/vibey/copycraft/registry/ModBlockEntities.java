@@ -12,31 +12,19 @@ public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, CopyCraft.MODID);
 
+    // CRITICAL FIX: Each block needs to be listed in EVERY registration, OR use separate registrations
+    // Going with single registration that supports ALL blocks (this is valid)
     public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_ENTITY =
             BLOCK_ENTITIES.register("copy_block_entity", () ->
                     BlockEntityType.Builder.of(CopyBlockEntity::new,
-                            ModBlocks.COPY_BLOCK.get()
-                    ).build(null));
-
-    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_FULL_ENTITY =
-            BLOCK_ENTITIES.register("copy_block_full_entity", () ->
-                    BlockEntityType.Builder.of(CopyBlockEntity::new,
-                            ModBlocks.COPY_BLOCK_FULL.get()
-                    ).build(null));
-
-    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_SLAB_ENTITY =
-            BLOCK_ENTITIES.register("copy_block_slab_entity", () ->
-                    BlockEntityType.Builder.of(CopyBlockEntity::new,
-                            ModBlocks.COPY_BLOCK_SLAB.get()
-                    ).build(null));
-
-    public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_STAIRS_ENTITY =
-            BLOCK_ENTITIES.register("copy_block_stairs_entity", () ->
-                    BlockEntityType.Builder.of(CopyBlockEntity::new,
+                            ModBlocks.COPY_BLOCK.get(),
+                            ModBlocks.COPY_BLOCK_FULL.get(),
+                            ModBlocks.COPY_BLOCK_SLAB.get(),
                             ModBlocks.COPY_BLOCK_STAIRS.get()
                     ).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
+        System.out.println("Registered CopyCraft block entities!");
     }
 }
