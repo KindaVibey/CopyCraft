@@ -1,7 +1,7 @@
 package com.vibey.copycraft.vs2;
 
 import com.vibey.copycraft.CopyCraft;
-import com.vibey.copycraft.block.CopyBlockVariant;
+import com.vibey.copycraft.block.CopyBlock;
 import kotlin.Pair;
 import kotlin.Triple;
 import net.minecraft.core.BlockPos;
@@ -41,12 +41,12 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
     @Override
     public Double getBlockStateMass(BlockState blockState) {
         // Only handle our blocks
-        if (!(blockState.getBlock() instanceof CopyBlockVariant copyBlockVariant)) {
+        if (!(blockState.getBlock() instanceof CopyBlock copyBlock)) {
             return null;
         }
 
         // Read mass from BlockState (thread-safe, no world access needed)
-        double mass = CopyBlockVariant.decodeMass(blockState);
+        double mass = CopyBlock.decodeMass(blockState);
 
         if (mass == 0) {
             // Empty block - light frame
@@ -54,7 +54,7 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
         }
 
         System.out.println("[CopyCraft VS] Block " + blockState.getBlock().getName().getString() +
-                " has mass: " + mass + " kg (multiplier=" + copyBlockVariant.getMassMultiplier() + ")");
+                " has mass: " + mass + " kg (multiplier=" + copyBlock.getMassMultiplier() + ")");
 
         return mass;
     }

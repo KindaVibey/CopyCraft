@@ -1,6 +1,5 @@
 package com.vibey.copycraft.block;
 
-import com.vibey.copycraft.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -8,7 +7,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -22,7 +20,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Stairs-sized CopyBlock variant (0.75x multiplier)
  */
 public class CopyBlockStairs extends CopyBlockVariant {
-    // Proper stair shapes for collision
     protected static final VoxelShape BOTTOM_AABB = Block.box(0.0, 0.0, 0.0, 16.0, 8.0, 16.0);
     protected static final VoxelShape BOTTOM_NORTH = Shapes.or(BOTTOM_AABB, Block.box(0.0, 8.0, 0.0, 16.0, 16.0, 8.0));
     protected static final VoxelShape BOTTOM_SOUTH = Shapes.or(BOTTOM_AABB, Block.box(0.0, 8.0, 8.0, 16.0, 16.0, 16.0));
@@ -47,7 +44,7 @@ public class CopyBlockStairs extends CopyBlockVariant {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder); // This adds MASS_HIGH and MASS_LOW
+        super.createBlockStateDefinition(builder);
         builder.add(BlockStateProperties.HORIZONTAL_FACING, BlockStateProperties.HALF, BlockStateProperties.STAIRS_SHAPE);
     }
 
@@ -179,18 +176,29 @@ public class CopyBlockStairs extends CopyBlockVariant {
         }
     }
 
-    // FIX: Forward collision shape to copied block when available, otherwise use proper stair shape
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof CopyBlockEntity copyBE) {
-            BlockState copiedState = copyBE.getCopiedBlock();
-            if (!copiedState.isAir()) {
-                // For stairs, we want to use our stair shape for consistent collision
-                // The copied block's full collision might cause VS issues
-                return getShape(state, level, pos, context);
-            }
-        }
         return getShape(state, level, pos, context);
+    }
+
+    @Override
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
+
+    // VS2 collision settings
+    @Override
+    public boolean useShapeForLightOcclusion(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        return true; // Stairs always let light through
+    }
+
+    @Override
+    public boolean isCollisionShapeFullBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return false; // Stairs are not full blocks
     }
 }

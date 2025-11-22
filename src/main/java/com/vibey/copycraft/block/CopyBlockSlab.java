@@ -32,7 +32,7 @@ public class CopyBlockSlab extends CopyBlockVariant {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder); // This adds MASS_HIGH and MASS_LOW
+        super.createBlockStateDefinition(builder);
         builder.add(BlockStateProperties.SLAB_TYPE);
     }
 
@@ -42,11 +42,9 @@ public class CopyBlockSlab extends CopyBlockVariant {
         BlockState state = context.getLevel().getBlockState(pos);
 
         if (state.is(this)) {
-            // Clicking on existing slab = make it double
             return state.setValue(BlockStateProperties.SLAB_TYPE, SlabType.DOUBLE);
         }
 
-        // Determine if top or bottom slab based on click position
         Direction facing = context.getClickedFace();
         if (facing == Direction.DOWN || (facing != Direction.UP && context.getClickLocation().y - pos.getY() > 0.5)) {
             return this.defaultBlockState().setValue(BlockStateProperties.SLAB_TYPE, SlabType.TOP);
@@ -84,25 +82,35 @@ public class CopyBlockSlab extends CopyBlockVariant {
         };
     }
 
-    // FIX: Forward collision shape to copied block when available, otherwise use visual shape
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof CopyBlockEntity copyBE) {
-            BlockState copiedState = copyBE.getCopiedBlock();
-            if (!copiedState.isAir()) {
-                // Get the copied block's collision shape
-                VoxelShape copiedShape = copiedState.getCollisionShape(level, pos, context);
+        SlabType type = state.getValue(BlockStateProperties.SLAB_TYPE);
+        return switch (type) {
+            case DOUBLE -> Shapes.block();
+            case TOP -> TOP_SHAPE;
+            default -> BOTTOM_SHAPE;
+        };
+    }
 
-                // Scale it based on slab type
-                SlabType type = state.getValue(BlockStateProperties.SLAB_TYPE);
-                if (type == SlabType.DOUBLE) {
-                    return copiedShape; // Full block
-                }
-                // For top/bottom slabs, use our shape (more reliable for VS)
-                return getShape(state, level, pos, context);
-            }
-        }
-        return getShape(state, level, pos, context);
+    @Override
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getCollisionShape(state, level, pos, context);
+    }
+
+    // VS2 collision settings
+    @Override
+    public boolean useShapeForLightOcclusion(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        SlabType type = state.getValue(BlockStateProperties.SLAB_TYPE);
+        return type != SlabType.DOUBLE; // Only double slabs block skylight
+    }
+
+    @Override
+    public boolean isCollisionShapeFullBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return state.getValue(BlockStateProperties.SLAB_TYPE) == SlabType.DOUBLE;
     }
 }

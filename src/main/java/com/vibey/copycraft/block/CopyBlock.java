@@ -17,6 +17,8 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -24,9 +26,20 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public class CopyBlock extends Block implements EntityBlock {
+    // Two properties give us 16 × 16 = 256 possible mass values
+    public static final IntegerProperty MASS_HIGH = IntegerProperty.create("mass_high", 0, 15);
+    public static final IntegerProperty MASS_LOW = IntegerProperty.create("mass_low", 0, 15);
 
     public CopyBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any()
+                .setValue(MASS_HIGH, 0)
+                .setValue(MASS_LOW, 0));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(MASS_HIGH, MASS_LOW);
     }
 
     @Override
@@ -38,8 +51,15 @@ public class CopyBlock extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         CopyBlockEntity entity = new CopyBlockEntity(pos, state);
-        System.out.println("Creating block entity at " + pos + " for state: " + state);
         return entity;
+    }
+
+    /**
+     * Get the mass multiplier for this variant
+     * Base CopyBlock has 1.0x multiplier
+     */
+    public float getMassMultiplier() {
+        return 1.0f;
     }
 
     @Override
@@ -48,7 +68,9 @@ public class CopyBlock extends Block implements EntityBlock {
         if (be instanceof CopyBlockEntity copyBE) {
             BlockState copiedState = copyBE.getCopiedBlock();
             if (!copiedState.isAir()) {
-                return copiedState.getBlock().getExplosionResistance();
+                float baseResistance = copiedState.getBlock().getExplosionResistance();
+                float scaledResistance = baseResistance * getMassMultiplier();
+                return scaledResistance;
             }
         }
         return super.getExplosionResistance(state, level, pos, explosion);
@@ -60,16 +82,44 @@ public class CopyBlock extends Block implements EntityBlock {
         if (be instanceof CopyBlockEntity copyBE) {
             BlockState copiedState = copyBE.getCopiedBlock();
             if (!copiedState.isAir()) {
-                return copiedState.getDestroyProgress(player, level, pos);
+                float baseProgress = copiedState.getDestroyProgress(player, level, pos);
+                float scaledProgress = baseProgress / getMassMultiplier();
+                return scaledProgress;
             }
         }
         return super.getDestroyProgress(state, player, level, pos);
     }
 
+    // ==================== COLLISION METHODS FOR VS2 ====================
+
     // Full block collision for stability
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return Shapes.block();
+    }
+
+    // CRITICAL: VS2 uses this for ship collision
+    @Override
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return Shapes.block();
+    }
+
+    // VS2 uses this to determine if block occludes light and has solid collision
+    @Override
+    public boolean useShapeForLightOcclusion(BlockState state) {
+        return true;
+    }
+
+    // Ensure proper light propagation
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        return false;
+    }
+
+    // Ensure VS2 recognizes this as a solid block
+    @Override
+    public boolean isCollisionShapeFullBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return true;
     }
 
     @Override
@@ -82,7 +132,6 @@ public class CopyBlock extends Block implements EntityBlock {
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (!(blockEntity instanceof CopyBlockEntity copyBlockEntity)) {
-            System.out.println("ERROR: No block entity at " + pos + "! Found: " + blockEntity);
             return InteractionResult.PASS;
         }
 
@@ -104,7 +153,6 @@ public class CopyBlock extends Block implements EntityBlock {
                 itemEntity.setNoPickUpDelay();
                 level.addFreshEntity(itemEntity);
 
-                System.out.println("Clearing texture at " + pos);
                 copyBlockEntity.setCopiedBlock(Blocks.AIR.defaultBlockState());
 
                 // Force neighbor updates to trigger chunk rebuild
@@ -132,7 +180,6 @@ public class CopyBlock extends Block implements EntityBlock {
             // If already has a texture, check if it's the same block for rotation
             if (!currentCopied.isAir()) {
                 if (currentCopied.getBlock() == targetBlock) {
-                    System.out.println("Rotating block at " + pos);
                     copyBlockEntity.setCopiedBlock(targetState);
                     return InteractionResult.SUCCESS;
                 } else {
@@ -144,7 +191,6 @@ public class CopyBlock extends Block implements EntityBlock {
                 if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
-                System.out.println("Setting texture at " + pos + " to " + targetState);
                 copyBlockEntity.setCopiedBlock(targetState);
                 return InteractionResult.SUCCESS;
             }
@@ -185,5 +231,53 @@ public class CopyBlock extends Block implements EntityBlock {
             }
         }
         super.playerWillDestroy(level, pos, state, player);
+    }
+
+    // ==================== MASS ENCODING METHODS ====================
+
+    public static int encodeMass(double mass) {
+        mass = Math.max(0, Math.min(4400, mass));
+
+        if (mass < 50) {
+            return (int)mass;
+        } else if (mass < 150) {
+            return 50 + (int)((mass - 50) / 2);
+        } else if (mass < 400) {
+            return 100 + (int)((mass - 150) / 5);
+        } else if (mass < 900) {
+            return 150 + (int)((mass - 400) / 10);
+        } else {
+            int value = 200 + (int)((mass - 900) / 50);
+            return Math.min(255, value);
+        }
+    }
+
+    public static double decodeMass(int encoded) {
+        if (encoded < 50) {
+            return encoded;
+        } else if (encoded < 100) {
+            return 50 + (encoded - 50) * 2.0;
+        } else if (encoded < 150) {
+            return 150 + (encoded - 100) * 5.0;
+        } else if (encoded < 200) {
+            return 400 + (encoded - 150) * 10.0;
+        } else {
+            return 900 + (encoded - 200) * 50.0;
+        }
+    }
+
+    public static double decodeMass(BlockState state) {
+        int high = state.getValue(MASS_HIGH);
+        int low = state.getValue(MASS_LOW);
+        int encoded = high * 16 + low;
+        return decodeMass(encoded);
+    }
+
+    public static BlockState setMass(BlockState state, double mass) {
+        int encoded = encodeMass(mass);
+        int high = encoded / 16;
+        int low = encoded % 16;
+
+        return state.setValue(MASS_HIGH, high).setValue(MASS_LOW, low);
     }
 }
