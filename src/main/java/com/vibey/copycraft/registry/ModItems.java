@@ -17,8 +17,8 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.COPY_BLOCK.get(), new Item.Properties()));
 
     // New variant items
-    public static final RegistryObject<Item> COPY_BLOCK_FULL = ITEMS.register("copy_block_full",
-            () -> new BlockItem(ModBlocks.COPY_BLOCK_FULL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> COPY_BLOCK_FULL = ITEMS.register("copy_block_ghost",
+            () -> new BlockItem(ModBlocks.COPY_BLOCK_GHOST.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> COPY_BLOCK_SLAB = ITEMS.register("copy_block_slab",
             () -> new BlockItem(ModBlocks.COPY_BLOCK_SLAB.get(), new Item.Properties()));

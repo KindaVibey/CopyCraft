@@ -7,10 +7,10 @@
   ],
   "key": {
     "S": {
-      "item": "minecraft:stone"
+      "item": "minecraft:iron_nugget"
     },
     "P": {
-      "item": "minecraft:oak_planks"
+      "item": "minecraft:iron_ingot"
     },
     "G": {
       "item": "minecraft:glass"
@@ -18,6 +18,6 @@
   },
   "result": {
     "item": "copycraft:copy_block",
-    "count": 4
+    "count": 8
   }
 }

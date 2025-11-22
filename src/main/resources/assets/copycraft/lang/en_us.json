@@ -1,7 +1,7 @@
 {
   "itemGroup.copycraft": "CopyCraft",
   "block.copycraft.copy_block": "Copy Block",
-  "block.copycraft.copy_block_full": "Copy Block Full",
+  "block.copycraft.copy_block_ghost": "Copy Block Ghost",
   "block.copycraft.copy_block_slab": "Copy Block Slab",
   "block.copycraft.copy_block_stairs": "Copy Block Stairs"
 }

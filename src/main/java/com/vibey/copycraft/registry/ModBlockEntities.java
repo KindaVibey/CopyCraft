@@ -18,7 +18,7 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("copy_block_entity", () ->
                     BlockEntityType.Builder.of(CopyBlockEntity::new,
                             ModBlocks.COPY_BLOCK.get(),
-                            ModBlocks.COPY_BLOCK_FULL.get(),
+                            ModBlocks.COPY_BLOCK_GHOST.get(),
                             ModBlocks.COPY_BLOCK_SLAB.get(),
                             ModBlocks.COPY_BLOCK_STAIRS.get()
                     ).build(null));

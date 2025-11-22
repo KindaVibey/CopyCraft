@@ -80,7 +80,7 @@ public class CopyCraft {
             event.enqueueWork(() -> {
                 // FIX: Allow both cutout and translucent render types; model decides per-face
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_FULL.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_GHOST.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_SLAB.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_STAIRS.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
             });

@@ -2,7 +2,7 @@ package com.vibey.copycraft.registry;
 
 import com.vibey.copycraft.CopyCraft;
 import com.vibey.copycraft.block.CopyBlock;
-import com.vibey.copycraft.block.CopyBlockFull;
+import com.vibey.copycraft.block.CopyBlockGhost;
 import com.vibey.copycraft.block.CopyBlockSlab;
 import com.vibey.copycraft.block.CopyBlockStairs;
 import net.minecraft.world.level.block.Block;
@@ -26,10 +26,11 @@ public class ModBlocks {
                     //.dynamicShape()));
 
     // New variants with mass multipliers
-    public static final RegistryObject<Block> COPY_BLOCK_FULL = BLOCKS.register("copy_block_full",
-            () -> new CopyBlockFull(BlockBehaviour.Properties.of()
+    public static final RegistryObject<Block> COPY_BLOCK_GHOST = BLOCKS.register("copy_block_ghost",
+            () -> new CopyBlockGhost(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
+                    .noCollission()
                     .noOcclusion()));
                     //.dynamicShape()));
 

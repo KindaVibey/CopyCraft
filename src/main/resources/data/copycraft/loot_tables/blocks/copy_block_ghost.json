@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "copycraft:copy_block_full"
+          "name": "copycraft:copy_block_ghost"
         }
       ],
       "conditions": [

@@ -82,12 +82,6 @@ public class CopyBlock extends Block implements EntityBlock {
         return super.getDestroyProgress(state, player, level, pos);
     }
 
-    // COLLISION
-    @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
-    }
-
     @Override
     public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return Shapes.block();
@@ -101,11 +95,6 @@ public class CopyBlock extends Block implements EntityBlock {
     @Override
     public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
         return false;
-    }
-
-    @Override
-    public boolean isCollisionShapeFullBlock(BlockState state, BlockGetter level, BlockPos pos) {
-        return true;
     }
 
     // ========== HELPER: CLEAN ITEMSTACK ==========
