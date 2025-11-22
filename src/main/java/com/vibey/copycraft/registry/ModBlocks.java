@@ -22,30 +22,30 @@ public class ModBlocks {
             () -> new CopyBlock(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
-                    .noOcclusion()
-                    .dynamicShape()));
+                    .noOcclusion()));
+                    //.dynamicShape()));
 
     // New variants with mass multipliers
     public static final RegistryObject<Block> COPY_BLOCK_FULL = BLOCKS.register("copy_block_full",
             () -> new CopyBlockFull(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
-                    .noOcclusion()
-                    .dynamicShape()));
+                    .noOcclusion()));
+                    //.dynamicShape()));
 
     public static final RegistryObject<Block> COPY_BLOCK_SLAB = BLOCKS.register("copy_block_slab",
             () -> new CopyBlockSlab(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
-                    .noOcclusion()
-                    .dynamicShape()));
+                    .noOcclusion()));
+                    //.dynamicShape()));
 
     public static final RegistryObject<Block> COPY_BLOCK_STAIRS = BLOCKS.register("copy_block_stairs",
             () -> new CopyBlockStairs(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
-                    .noOcclusion()
-                    .dynamicShape()));
+                    .noOcclusion()));
+                    //.dynamicShape()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
