@@ -25,7 +25,7 @@ public class ModelRegistrationHandler {
                 String path = id.getPath();
 
                 if (path.equals("copy_block") ||
-                        path.equals("copy_block_full") ||
+                        path.equals("copy_block_ghost") ||
                         path.equals("copy_block_slab") ||
                         path.equals("copy_block_slab_top") ||
                         path.equals("copy_block_stairs")) {
