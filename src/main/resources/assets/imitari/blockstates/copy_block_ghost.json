@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "imitari:block/copy_block_ghost"
+    }
+  }
+}

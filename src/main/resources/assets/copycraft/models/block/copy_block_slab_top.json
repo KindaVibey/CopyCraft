@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/slab_top",
-  "textures": {
-    "bottom": "copycraft:block/copycraftblock",
-    "top": "copycraft:block/copycraftblock",
-    "side": "copycraft:block/copycraftblock"
-  }
-}

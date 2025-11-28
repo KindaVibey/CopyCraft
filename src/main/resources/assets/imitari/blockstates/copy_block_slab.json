@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "imitari:block/copy_block_slab"
+    },
+    "type=top": {
+      "model": "imitari:block/copy_block_slab_top"
+    },
+    "type=double": {
+      "model": "imitari:block/copy_block"
+    }
+  }
+}

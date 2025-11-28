@@ -1,0 +1,89 @@
+package com.vibey.imitari;
+
+import com.mojang.logging.LogUtils;
+import com.vibey.imitari.client.ModelRegistrationHandler;
+import com.vibey.imitari.registry.ModBlockEntities;
+import com.vibey.imitari.registry.ModBlocks;
+import com.vibey.imitari.registry.ModItems;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.slf4j.Logger;
+
+@Mod(Imitari.MODID)
+public class Imitari {
+    public static final String MODID = "imitari";
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    public Imitari() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        System.out.println("CopyCraft constructor called!");
+
+        modEventBus.addListener(this::commonSetup);
+
+        ModBlocks.register(modEventBus);
+        ModItems.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
+        ModCreativeTabs.register(modEventBus);
+
+        // Register model event handler manually
+        modEventBus.addListener(ModelRegistrationHandler::onModelBake);
+        System.out.println("Registered model bake listener!");
+
+        MinecraftForge.EVENT_BUS.register(this);
+        modEventBus.addListener(this::addCreative);
+    }
+
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        LOGGER.info("CopyCraft common setup complete!");
+
+        event.enqueueWork(() -> {
+            try {
+                com.vibey.imitari.vs2.CopyCraftWeights.register();
+                LOGGER.info("Successfully registered CopyCraft VS2 dynamic mass system!");
+            } catch (NoClassDefFoundError e) {
+                LOGGER.info("Valkyrien Skies not installed - skipping VS2 integration");
+            } catch (Exception e) {
+                LOGGER.error("Failed to register VS2 weights", e);
+            }
+        });
+    }
+
+    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(ModItems.COPY_BLOCK);
+        }
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        LOGGER.info("CopyCraft server starting");
+    }
+
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    public static class ClientModEvents {
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            LOGGER.info("CopyCraft client setup");
+
+            event.enqueueWork(() -> {
+                // FIX: Allow both cutout and translucent render types; model decides per-face
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_GHOST.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_SLAB.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_STAIRS.get(), rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+            });
+        }
+    }
+}
