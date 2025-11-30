@@ -1,6 +1,7 @@
 package com.vibey.imitari.blockentity;
 
-import com.vibey.imitari.block.CopyBlock;
+import com.vibey.imitari.block.CopyBlockBase;
+import com.vibey.imitari.block.ICopyBlock;
 import com.vibey.imitari.client.ClientEventsHandler;
 import com.vibey.imitari.client.CopyBlockModel;
 import com.vibey.imitari.registry.ModBlockEntities;
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 public class CopyBlockEntity extends BlockEntity {
 
     private BlockState copiedBlock = Blocks.AIR.defaultBlockState();
-    private int virtualRotation = 0; // 0 = Y-axis (normal), 1 = Z-axis, 2 = X-axis
+    private int virtualRotation = 0;
     private boolean removedByCreative = false;
 
     public CopyBlockEntity(BlockPos pos, BlockState blockState) {
@@ -80,7 +81,7 @@ public class CopyBlockEntity extends BlockEntity {
 
             // Log the change
             if (!oldBlock.is(newBlock.getBlock())) {
-                System.out.println("[CopyCraft] Texture changed at " + worldPosition +
+                System.out.println("[Imitari] Texture changed at " + worldPosition +
                         ": " + (oldBlock.isAir() ? "EMPTY" : oldBlock.getBlock().getName().getString()) +
                         " -> " + (newBlock.isAir() ? "EMPTY" : newBlock.getBlock().getName().getString()));
             }
@@ -94,7 +95,7 @@ public class CopyBlockEntity extends BlockEntity {
         if (level == null || level.isClientSide) return;
 
         BlockState currentState = getBlockState();
-        if (!(currentState.getBlock() instanceof CopyBlock copyBlock)) {
+        if (!(currentState.getBlock() instanceof ICopyBlock copyBlock)) {
             return;
         }
 
@@ -111,31 +112,30 @@ public class CopyBlockEntity extends BlockEntity {
                     float multiplier = copyBlock.getMassMultiplier();
                     finalMass = copiedMass * multiplier;
 
-                    System.out.println("[CopyCraft] Copying " + copiedBlock.getBlock().getName().getString() +
+                    System.out.println("[Imitari] Copying " + copiedBlock.getBlock().getName().getString() +
                             ": " + copiedMass + "kg × " + multiplier + " = " + finalMass + "kg");
                 } else {
                     // Fallback mass if VS2 doesn't have data
                     finalMass = 50.0 * copyBlock.getMassMultiplier();
-                    System.out.println("[CopyCraft] No VS2 data for " + copiedBlock.getBlock().getName().getString() +
+                    System.out.println("[Imitari] No VS2 data for " + copiedBlock.getBlock().getName().getString() +
                             ", using fallback: " + finalMass + "kg");
                 }
             } catch (NoClassDefFoundError e) {
                 // VS not installed, use default mass
                 finalMass = 50.0 * copyBlock.getMassMultiplier();
-                System.out.println("[CopyCraft] VS2 not installed, using default mass: " + finalMass + "kg");
+                System.out.println("[Imitari] VS2 not installed, using default mass: " + finalMass + "kg");
             }
         }
 
         // Store mass in BlockState using piecewise encoding
-        BlockState newState = CopyBlock.setMass(currentState, finalMass);
+        BlockState newState = CopyBlockBase.setMass(currentState, finalMass);
         level.setBlock(worldPosition, newState, Block.UPDATE_ALL);
 
-        System.out.println("[CopyCraft] Set mass in BlockState: " + finalMass + "kg (encoded as " +
-                CopyBlock.encodeMass(finalMass) + ")");
+        System.out.println("[Imitari] Set mass in BlockState: " + finalMass + "kg (encoded as " +
+                CopyBlockBase.encodeMass(finalMass) + ")");
     }
 
     private void rotateBlock() {
-        // Simple 3-axis rotation like logs: Y -> Z -> X -> Y
         virtualRotation = (virtualRotation + 1) % 3;
     }
 
@@ -146,7 +146,6 @@ public class CopyBlockEntity extends BlockEntity {
     @NotNull
     @Override
     public ModelData getModelData() {
-        // Always return fresh data with current state
         return ModelData.builder()
                 .with(CopyBlockModel.COPIED_STATE, copiedBlock)
                 .with(CopyBlockModel.VIRTUAL_ROTATION, virtualRotation)
@@ -165,7 +164,6 @@ public class CopyBlockEntity extends BlockEntity {
                 ResourceLocation loc = new ResourceLocation(blockId);
                 this.copiedBlock = BuiltInRegistries.BLOCK.get(loc).defaultBlockState();
 
-                // Load block state properties
                 if (tag.contains("CopiedBlock")) {
                     try {
                         this.copiedBlock = NbtUtils.readBlockState(
@@ -189,14 +187,12 @@ public class CopyBlockEntity extends BlockEntity {
                 this.copiedBlock = Blocks.AIR.defaultBlockState();
             }
         } else {
-            // No data means it should be AIR
             this.copiedBlock = Blocks.AIR.defaultBlockState();
         }
 
         this.virtualRotation = tag.getInt("VirtualRotation");
 
         if (level != null && level.isClientSide) {
-            // Force invalidate and refresh model data
             requestModelDataUpdate();
         }
     }
@@ -208,11 +204,8 @@ public class CopyBlockEntity extends BlockEntity {
 
         load(tag);
 
-        // If data changed and we're on client, request render update
         if (level != null && level.isClientSide) {
             requestModelDataUpdate();
-
-            // Queue the block for render update
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                     ClientEventsHandler.queueBlockUpdate(worldPosition)
             );
@@ -249,28 +242,20 @@ public class CopyBlockEntity extends BlockEntity {
     public void onDataPacket(net.minecraft.network.Connection net, ClientboundBlockEntityDataPacket pkt) {
         CompoundTag tag = pkt.getTag();
         if (tag != null) {
-            // Store old values for comparison
             BlockState oldCopied = this.copiedBlock;
 
             handleUpdateTag(tag);
 
-            // Force model data update and chunk re-render on client
             if (level != null && level.isClientSide) {
-                // ALWAYS force update when receiving packet
                 requestModelDataUpdate();
-
-                // Queue the block for render update
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                         ClientEventsHandler.queueBlockUpdate(worldPosition)
                 );
 
-                // Mark the block for re-render with all flags
                 level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
                         Block.UPDATE_ALL_IMMEDIATE);
 
-                // If we cleared the block (went from something to AIR), force extra update
                 if (!oldCopied.isAir() && this.copiedBlock.isAir()) {
-                    // Double-queue for AIR updates since they seem to be stubborn
                     DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
                         ClientEventsHandler.queueBlockUpdate(worldPosition);
                         ClientEventsHandler.queueBlockUpdate(worldPosition);
@@ -283,7 +268,6 @@ public class CopyBlockEntity extends BlockEntity {
     @Override
     public void setRemoved() {
         super.setRemoved();
-        // Clean up VS cache when block entity is removed
         if (level != null && !level.isClientSide) {
             try {
                 com.vibey.imitari.vs2.CopyCraftWeights.invalidateCache(worldPosition);

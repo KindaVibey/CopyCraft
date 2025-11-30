@@ -1,7 +1,8 @@
 package com.vibey.imitari.vs2;
 
 import com.vibey.imitari.Imitari;
-import com.vibey.imitari.block.CopyBlock;
+import com.vibey.imitari.block.CopyBlockBase;
+import com.vibey.imitari.block.ICopyBlock;
 import kotlin.Triple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -18,13 +19,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * VS2 integration for CopyBlock dynamic mass.
- *
- * Like Eureka's ballast, this reads mass information directly from BlockState properties,
- * making it thread-safe for VS2's physics calculations.
- *
- * The MASS_HIGH and MASS_LOW properties store encoded mass using piecewise linear encoding
- * for 1kg precision at low masses (0-50kg) while reaching up to 4400kg.
+ * VS2 integration for ICopyBlock dynamic mass.
+ * Updated to work with the new interface-based system.
  */
 public class CopyCraftWeights implements BlockStateInfoProvider {
     public static final CopyCraftWeights INSTANCE = new CopyCraftWeights();
@@ -39,20 +35,20 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
     @Nullable
     @Override
     public Double getBlockStateMass(BlockState blockState) {
-        // Only handle our blocks
-        if (!(blockState.getBlock() instanceof CopyBlock copyBlock)) {
+        // Only handle blocks implementing ICopyBlock
+        if (!(blockState.getBlock() instanceof ICopyBlock copyBlock)) {
             return null;
         }
 
         // Read mass from BlockState (thread-safe, no world access needed)
-        double mass = CopyBlock.decodeMass(blockState);
+        double mass = CopyBlockBase.decodeMass(blockState);
 
         if (mass == 0) {
             // Empty block - light frame
             return 10.0;
         }
 
-        System.out.println("[CopyCraft VS] Block " + blockState.getBlock().getName().getString() +
+        System.out.println("[Imitari VS] Block " + blockState.getBlock().getName().getString() +
                 " has mass: " + mass + " kg (multiplier=" + copyBlock.getMassMultiplier() + ")");
 
         return mass;
@@ -86,9 +82,9 @@ public class CopyCraftWeights implements BlockStateInfoProvider {
                     new ResourceLocation(Imitari.MODID, "copycraft_weights"),
                     INSTANCE
             );
-            System.out.println("[CopyCraft VS] ✓✓✓ REGISTERED BlockStateInfoProvider with priority 200!");
+            System.out.println("[Imitari VS] ✓✓✓ REGISTERED BlockStateInfoProvider with priority 200!");
         } catch (Exception e) {
-            System.err.println("[CopyCraft VS] FAILED to register:");
+            System.err.println("[Imitari VS] FAILED to register:");
             e.printStackTrace();
         }
     }

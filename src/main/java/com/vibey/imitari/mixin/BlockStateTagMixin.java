@@ -1,6 +1,6 @@
 package com.vibey.imitari.mixin;
 
-import com.vibey.imitari.block.CopyBlock;
+import com.vibey.imitari.block.ICopyBlock;
 import com.vibey.imitari.util.CopyBlockContext;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * The ONLY mixin needed for dynamic tags.
- * Intercepts tag checks on BlockState and delegates to copied block if it's a CopyBlock.
+ * Now checks for ICopyBlock interface instead of concrete class.
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public abstract class BlockStateTagMixin {
@@ -23,13 +23,12 @@ public abstract class BlockStateTagMixin {
 
     /**
      * Inject at HEAD of is(TagKey) to check CopyBlock's copied block tags.
-     * This is called EVERY time any mod checks if a BlockState has a tag.
      */
-    @Inject(method = "m_204336_", at = @At("HEAD"), cancellable = true) // is(TagKey)
+    @Inject(method = "m_204336_", at = @At("HEAD"), cancellable = true)
     private void imitari$checkCopiedTags(TagKey<Block> tag, CallbackInfoReturnable<Boolean> cir) {
-        // CRITICAL: Only process if this is a CopyBlock
+        // CRITICAL: Only process if this implements ICopyBlock
         // Early return means ZERO performance impact on all other blocks
-        if (!(this.m_60734_() instanceof CopyBlock)) {
+        if (!(this.m_60734_() instanceof ICopyBlock)) {
             return;
         }
 
