@@ -37,6 +37,10 @@ public class Imitari {
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
+        // CRITICAL: Auto-register blocks BEFORE model baking!
+        // Model baking happens during mod construction phase
+        CopyBlockModelProvider.autoRegisterForMod(MODID);
+
         // Register the new model provider system
         modEventBus.addListener(CopyBlockModelProvider::onModelBake);
         System.out.println("Registered CopyBlock model provider!");
@@ -57,9 +61,6 @@ public class Imitari {
             } catch (Exception e) {
                 LOGGER.error("Failed to register VS2 weights", e);
             }
-
-            // Auto-register all ICopyBlock implementations from this mod
-            CopyBlockModelProvider.autoRegisterForMod(MODID);
         });
     }
 

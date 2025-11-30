@@ -48,15 +48,26 @@ public class CopyBlockModelProvider {
      * @param modId The mod ID to scan for ICopyBlock implementations
      */
     public static void autoRegisterForMod(String modId) {
+        System.out.println("[Imitari] Scanning for ICopyBlock implementations in mod: " + modId);
         int count = 0;
         for (Map.Entry<net.minecraft.resources.ResourceKey<Block>, Block> entry : ForgeRegistries.BLOCKS.getEntries()) {
             ResourceLocation id = entry.getKey().location();
             Block block = entry.getValue();
 
-            if (id.getNamespace().equals(modId) && block instanceof ICopyBlock copyBlock) {
-                if (copyBlock.useDynamicModel()) {
-                    registerBlock(id);
-                    count++;
+            if (id.getNamespace().equals(modId)) {
+                System.out.println("  Found block in " + modId + ": " + id + " (" + block.getClass().getSimpleName() + ")");
+
+                if (block instanceof ICopyBlock copyBlock) {
+                    System.out.println("    -> Implements ICopyBlock");
+                    if (copyBlock.useDynamicModel()) {
+                        registerBlock(id);
+                        count++;
+                        System.out.println("    -> Registered for dynamic model");
+                    } else {
+                        System.out.println("    -> useDynamicModel() returned false, skipping");
+                    }
+                } else {
+                    System.out.println("    -> Does NOT implement ICopyBlock");
                 }
             }
         }
@@ -73,17 +84,34 @@ public class CopyBlockModelProvider {
         Map<ResourceLocation, BakedModel> modelRegistry = event.getModels();
         int replacedCount = 0;
 
-        for (ResourceLocation blockId : REGISTERED_BLOCKS) {
-            // Try to find the model - might be just the block ID or with variants
-            BakedModel existingModel = modelRegistry.get(blockId);
+        // Iterate through ALL models in the registry
+        for (Map.Entry<ResourceLocation, BakedModel> entry : modelRegistry.entrySet()) {
+            ResourceLocation id = entry.getKey();
 
-            if (existingModel != null) {
-                CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
-                modelRegistry.put(blockId, wrappedModel);
-                System.out.println("✓ Wrapped model: " + blockId);
-                replacedCount++;
-            } else {
-                System.out.println("⚠ Model not found for registered block: " + blockId);
+            // Check if this model belongs to one of our registered blocks
+            for (ResourceLocation blockId : REGISTERED_BLOCKS) {
+                // Only check models from the same namespace
+                if (!id.getNamespace().equals(blockId.getNamespace())) {
+                    continue;
+                }
+
+                String path = id.getPath();
+                String blockPath = blockId.getPath();
+
+                // Match if path equals the block name (for simple models)
+                // OR contains the block name (for variant models like copy_block_slab_top)
+                if (path.equals(blockPath) ||
+                        path.equals(blockPath + "_top") ||
+                        path.equals(blockPath + "_bottom") ||
+                        path.startsWith(blockPath + "_")) {
+
+                    BakedModel existingModel = entry.getValue();
+                    CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
+
+                    modelRegistry.put(id, wrappedModel);
+                    System.out.println("✓ Wrapped model: " + id);
+                    replacedCount++;
+                }
             }
         }
 
