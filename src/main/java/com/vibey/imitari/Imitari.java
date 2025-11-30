@@ -7,6 +7,7 @@ import com.vibey.imitari.registry.ModBlocks;
 import com.vibey.imitari.registry.ModItems;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -37,9 +38,11 @@ public class Imitari {
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
-        // CRITICAL: Auto-register blocks BEFORE model baking!
-        // Model baking happens during mod construction phase
-        CopyBlockModelProvider.autoRegisterForMod(MODID);
+        // Manually register our blocks (safer than auto-register)
+        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block"));
+        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_ghost"));
+        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_slab"));
+        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_stairs"));
 
         // Register the new model provider system
         modEventBus.addListener(CopyBlockModelProvider::onModelBake);

@@ -96,19 +96,20 @@ public class CopyBlockModelProvider {
                 }
 
                 String path = id.getPath();
-                String blockPath = blockId.getPath();
+                String blockName = blockId.getPath();
 
-                // Match if path equals the block name (for simple models)
-                // OR contains the block name (for variant models like copy_block_slab_top)
-                if (path.equals(blockPath) ||
-                        path.equals(blockPath + "_top") ||
-                        path.equals(blockPath + "_bottom") ||
-                        path.startsWith(blockPath + "_")) {
+                // Original logic: check if path exactly matches block name OR is a variant
+                if (path.equals(blockName) ||
+                        path.equals(blockName + "_top") ||
+                        path.equals(blockName + "_slab") ||
+                        path.equals(blockName + "_stairs")) {
 
                     BakedModel existingModel = entry.getValue();
                     CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
 
+                    // Replace the model in the registry
                     modelRegistry.put(id, wrappedModel);
+
                     System.out.println("✓ Wrapped model: " + id);
                     replacedCount++;
                 }
