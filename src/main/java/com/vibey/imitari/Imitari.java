@@ -43,6 +43,7 @@ public class Imitari {
         CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_ghost"));
         CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_slab"));
         CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_stairs"));
+        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_layer"));
 
         // Register the new model provider system
         modEventBus.addListener(CopyBlockModelProvider::onModelBake);
@@ -93,6 +94,8 @@ public class Imitari {
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_SLAB.get(),
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_STAIRS.get(),
+                        rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_LAYER.get(),
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
             });
         }

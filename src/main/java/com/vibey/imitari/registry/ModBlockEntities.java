@@ -12,15 +12,14 @@ public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, Imitari.MODID);
 
-    // CRITICAL FIX: Each block needs to be listed in EVERY registration, OR use separate registrations
-    // Going with single registration that supports ALL blocks (this is valid)
     public static final RegistryObject<BlockEntityType<CopyBlockEntity>> COPY_BLOCK_ENTITY =
             BLOCK_ENTITIES.register("copy_block_entity", () ->
                     BlockEntityType.Builder.of(CopyBlockEntity::new,
                             ModBlocks.COPY_BLOCK.get(),
                             ModBlocks.COPY_BLOCK_GHOST.get(),
                             ModBlocks.COPY_BLOCK_SLAB.get(),
-                            ModBlocks.COPY_BLOCK_STAIRS.get()
+                            ModBlocks.COPY_BLOCK_STAIRS.get(),
+                            ModBlocks.COPY_BLOCK_LAYER.get()
                     ).build(null));
 
     public static void register(IEventBus eventBus) {

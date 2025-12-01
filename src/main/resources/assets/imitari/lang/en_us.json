@@ -3,5 +3,6 @@
   "block.imitari.copy_block": "Copy Block",
   "block.imitari.copy_block_ghost": "Copy Block Ghost",
   "block.imitari.copy_block_slab": "Copy Block Slab",
-  "block.imitari.copy_block_stairs": "Copy Block Stairs"
+  "block.imitari.copy_block_stairs": "Copy Block Stairs",
+  "block.imitari.copy_block_layer": "Copy Block Layer"
 }

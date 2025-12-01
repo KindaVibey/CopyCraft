@@ -26,6 +26,9 @@ public class ModItems {
     public static final RegistryObject<Item> COPY_BLOCK_STAIRS = ITEMS.register("copy_block_stairs",
             () -> new BlockItem(ModBlocks.COPY_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> COPY_BLOCK_LAYER = ITEMS.register("copy_block_layer",
+            () -> new BlockItem(ModBlocks.COPY_BLOCK_LAYER.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

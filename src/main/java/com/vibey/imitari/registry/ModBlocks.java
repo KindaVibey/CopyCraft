@@ -3,6 +3,7 @@ package com.vibey.imitari.registry;
 import com.vibey.imitari.Imitari;
 import com.vibey.imitari.block.CopyBlock;
 import com.vibey.imitari.block.CopyBlockGhost;
+import com.vibey.imitari.block.CopyBlockLayer;
 import com.vibey.imitari.block.CopyBlockSlab;
 import com.vibey.imitari.block.CopyBlockStairs;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +24,6 @@ public class ModBlocks {
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
                     .noOcclusion()));
-                    //.dynamicShape()));
 
     // New variants with mass multipliers
     public static final RegistryObject<Block> COPY_BLOCK_GHOST = BLOCKS.register("copy_block_ghost",
@@ -32,21 +32,24 @@ public class ModBlocks {
                     .sound(SoundType.WOOD)
                     .noCollission()
                     .noOcclusion()));
-                    //.dynamicShape()));
 
     public static final RegistryObject<Block> COPY_BLOCK_SLAB = BLOCKS.register("copy_block_slab",
             () -> new CopyBlockSlab(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
                     .noOcclusion()));
-                    //.dynamicShape()));
 
     public static final RegistryObject<Block> COPY_BLOCK_STAIRS = BLOCKS.register("copy_block_stairs",
             () -> new CopyBlockStairs(BlockBehaviour.Properties.of()
                     .strength(0.5F)
                     .sound(SoundType.WOOD)
                     .noOcclusion()));
-                    //.dynamicShape()));
+
+    public static final RegistryObject<Block> COPY_BLOCK_LAYER = BLOCKS.register("copy_block_layer",
+            () -> new CopyBlockLayer(BlockBehaviour.Properties.of()
+                    .strength(0.5F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

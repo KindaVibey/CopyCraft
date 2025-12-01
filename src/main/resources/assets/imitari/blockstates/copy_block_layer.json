@@ -1,0 +1,57 @@
+{
+  "variants": {
+    "facing=up,layers=1": { "model": "imitari:block/copy_block_layer_height2", "uvlock": true },
+    "facing=up,layers=2": { "model": "imitari:block/copy_block_layer_height4", "uvlock": true },
+    "facing=up,layers=3": { "model": "imitari:block/copy_block_layer_height6", "uvlock": true },
+    "facing=up,layers=4": { "model": "imitari:block/copy_block_layer_height8", "uvlock": true },
+    "facing=up,layers=5": { "model": "imitari:block/copy_block_layer_height10", "uvlock": true },
+    "facing=up,layers=6": { "model": "imitari:block/copy_block_layer_height12", "uvlock": true },
+    "facing=up,layers=7": { "model": "imitari:block/copy_block_layer_height14", "uvlock": true },
+    "facing=up,layers=8": { "model": "imitari:block/copy_block", "uvlock": true },
+
+    "facing=down,layers=1": { "model": "imitari:block/copy_block_layer_height2", "x": 180, "uvlock": true },
+    "facing=down,layers=2": { "model": "imitari:block/copy_block_layer_height4", "x": 180, "uvlock": true },
+    "facing=down,layers=3": { "model": "imitari:block/copy_block_layer_height6", "x": 180, "uvlock": true },
+    "facing=down,layers=4": { "model": "imitari:block/copy_block_layer_height8", "x": 180, "uvlock": true },
+    "facing=down,layers=5": { "model": "imitari:block/copy_block_layer_height10", "x": 180, "uvlock": true },
+    "facing=down,layers=6": { "model": "imitari:block/copy_block_layer_height12", "x": 180, "uvlock": true },
+    "facing=down,layers=7": { "model": "imitari:block/copy_block_layer_height14", "x": 180, "uvlock": true },
+    "facing=down,layers=8": { "model": "imitari:block/copy_block", "x": 180, "uvlock": true },
+
+    "facing=north,layers=1": { "model": "imitari:block/copy_block_layer_height2", "x": 90, "uvlock": true },
+    "facing=north,layers=2": { "model": "imitari:block/copy_block_layer_height4", "x": 90, "uvlock": true },
+    "facing=north,layers=3": { "model": "imitari:block/copy_block_layer_height6", "x": 90, "uvlock": true },
+    "facing=north,layers=4": { "model": "imitari:block/copy_block_layer_height8", "x": 90, "uvlock": true },
+    "facing=north,layers=5": { "model": "imitari:block/copy_block_layer_height10", "x": 90, "uvlock": true },
+    "facing=north,layers=6": { "model": "imitari:block/copy_block_layer_height12", "x": 90, "uvlock": true },
+    "facing=north,layers=7": { "model": "imitari:block/copy_block_layer_height14", "x": 90, "uvlock": true },
+    "facing=north,layers=8": { "model": "imitari:block/copy_block", "x": 90, "uvlock": true },
+
+    "facing=south,layers=1": { "model": "imitari:block/copy_block_layer_height2", "x": 270, "uvlock": true },
+    "facing=south,layers=2": { "model": "imitari:block/copy_block_layer_height4", "x": 270, "uvlock": true },
+    "facing=south,layers=3": { "model": "imitari:block/copy_block_layer_height6", "x": 270, "uvlock": true },
+    "facing=south,layers=4": { "model": "imitari:block/copy_block_layer_height8", "x": 270, "uvlock": true },
+    "facing=south,layers=5": { "model": "imitari:block/copy_block_layer_height10", "x": 270, "uvlock": true },
+    "facing=south,layers=6": { "model": "imitari:block/copy_block_layer_height12", "x": 270, "uvlock": true },
+    "facing=south,layers=7": { "model": "imitari:block/copy_block_layer_height14", "x": 270, "uvlock": true },
+    "facing=south,layers=8": { "model": "imitari:block/copy_block", "x": 270, "uvlock": true },
+
+    "facing=west,layers=1": { "model": "imitari:block/copy_block_layer_height2", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=2": { "model": "imitari:block/copy_block_layer_height4", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=3": { "model": "imitari:block/copy_block_layer_height6", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=4": { "model": "imitari:block/copy_block_layer_height8", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=5": { "model": "imitari:block/copy_block_layer_height10", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=6": { "model": "imitari:block/copy_block_layer_height12", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=7": { "model": "imitari:block/copy_block_layer_height14", "x": 270, "y": 90, "uvlock": true },
+    "facing=west,layers=8": { "model": "imitari:block/copy_block", "x": 270, "y": 90, "uvlock": true },
+
+    "facing=east,layers=1": { "model": "imitari:block/copy_block_layer_height2", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=2": { "model": "imitari:block/copy_block_layer_height4", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=3": { "model": "imitari:block/copy_block_layer_height6", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=4": { "model": "imitari:block/copy_block_layer_height8", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=5": { "model": "imitari:block/copy_block_layer_height10", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=6": { "model": "imitari:block/copy_block_layer_height12", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=7": { "model": "imitari:block/copy_block_layer_height14", "x": 270, "y": 270, "uvlock": true },
+    "facing=east,layers=8": { "model": "imitari:block/copy_block", "x": 270, "y": 270, "uvlock": true }
+  }
+}
