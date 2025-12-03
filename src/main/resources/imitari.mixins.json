@@ -5,7 +5,8 @@
   "refmap": "imitari.refmap.json",
   "mixins": [
     "BlockStateTagMixin",
-    "LevelGetBlockStateMixin"
+    "LevelGetBlockStateMixin",
+    "BlockStateDestroySpeedMixin"
   ],
   "injectors": {
     "defaultRequire": 1
