@@ -3,13 +3,16 @@ package com.vibey.imitari.block;
 import com.vibey.imitari.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -18,6 +21,7 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Slab-sized CopyBlock variant (0.5x multiplier)
@@ -48,6 +52,19 @@ public class CopyBlockSlab extends CopyBlockVariant {
         }
     }
 
+    // ========== SOUND COPYING ==========
+    @Override
+    public SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, @Nullable Entity entity) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                return copiedState.getSoundType(level, pos, entity);
+            }
+        }
+        return SoundType.WOOD;
+    }
+
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
@@ -60,6 +77,16 @@ public class CopyBlockSlab extends CopyBlockVariant {
         BlockState state = context.getLevel().getBlockState(pos);
 
         if (state.is(this)) {
+            // Play sound when completing to double slab
+            if (!context.getLevel().isClientSide) {
+                BlockEntity be = context.getLevel().getBlockEntity(pos);
+                if (be instanceof CopyBlockEntity copyBE) {
+                    BlockState copiedState = copyBE.getCopiedBlock();
+                    if (!copiedState.isAir()) {
+                        playBlockSound(context.getLevel(), pos, copiedState);
+                    }
+                }
+            }
             return state.setValue(BlockStateProperties.SLAB_TYPE, SlabType.DOUBLE);
         }
 
@@ -69,6 +96,21 @@ public class CopyBlockSlab extends CopyBlockVariant {
         }
 
         return this.defaultBlockState();
+    }
+
+    // ========== SOUND HELPER ==========
+    protected void playBlockSound(Level level, BlockPos pos, BlockState copiedState) {
+        if (!level.isClientSide && !copiedState.isAir()) {
+            SoundType soundType = copiedState.getSoundType(level, pos, null);
+            level.playSound(
+                    null,
+                    pos,
+                    soundType.getPlaceSound(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,
+                    (soundType.getVolume() + 1.0F) / 2.0F,
+                    soundType.getPitch() * 0.8F
+            );
+        }
     }
 
     @Override

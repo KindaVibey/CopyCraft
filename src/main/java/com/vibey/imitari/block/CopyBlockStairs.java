@@ -4,6 +4,7 @@ import com.vibey.imitari.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -11,10 +12,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -90,6 +93,12 @@ public class CopyBlockStairs extends StairBlock implements EntityBlock, ICopyBlo
         return ICopyBlock.super.getDestroyProgress(state, player, level, pos);
     }
 
+    // ========== SOUND COPYING ==========
+    @Override
+    public SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, @Nullable Entity entity) {
+        return ICopyBlock.super.getSoundType(state, level, pos, entity);
+    }
+
     // ========== INTERACTION ==========
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos,
@@ -122,17 +131,35 @@ public class CopyBlockStairs extends StairBlock implements EntityBlock, ICopyBlo
 
             if (!currentCopied.isAir()) {
                 if (currentCopied.getBlock() == targetBlock) {
+                    // Already has this block, just update rotation (no sound)
                     copyBlockEntity.setCopiedBlock(targetState);
                     return InteractionResult.SUCCESS;
                 } else return InteractionResult.FAIL;
             } else {
+                // First time placing a block - play sound
                 if (!player.isCreative()) heldItem.shrink(1);
                 copyBlockEntity.setCopiedBlock(targetState);
+                playBlockSound(level, pos, targetState);
                 return InteractionResult.SUCCESS;
             }
         }
 
         return InteractionResult.PASS;
+    }
+
+    // ========== SOUND HELPER ==========
+    protected void playBlockSound(Level level, BlockPos pos, BlockState copiedState) {
+        if (!level.isClientSide && !copiedState.isAir()) {
+            SoundType soundType = copiedState.getSoundType(level, pos, null);
+            level.playSound(
+                    null,
+                    pos,
+                    soundType.getPlaceSound(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,
+                    (soundType.getVolume() + 1.0F) / 2.0F,
+                    soundType.getPitch() * 0.8F
+            );
+        }
     }
 
     @Override

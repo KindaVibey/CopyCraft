@@ -1,8 +1,11 @@
 package com.vibey.imitari.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.player.Player;
@@ -55,6 +58,23 @@ public interface ICopyBlock {
         }
         // Return a default value if no copied block
         return 1.0f;
+    }
+
+    /**
+     * Get the sound type based on the copied block.
+     * This allows copy blocks to play the same sounds as the block they're copying.
+     */
+    default SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, Entity entity) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof CopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                // Return the copied block's sound type
+                return copiedState.getSoundType(level, pos, entity);
+            }
+        }
+        // Return default wood sound if no copied block
+        return SoundType.WOOD;
     }
 
     /**

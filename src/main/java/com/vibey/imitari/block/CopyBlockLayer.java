@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -13,12 +14,14 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -201,6 +204,12 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
         return super.getDestroyProgress(state, player, level, pos);
     }
 
+    // ========== SOUND COPYING ==========
+    @Override
+    public SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, @Nullable Entity entity) {
+        return ICopyBlock.super.getSoundType(state, level, pos, entity);
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         Direction facing = state.getValue(FACING);
@@ -254,6 +263,16 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
 
             // Only stack if same facing and clicked on the layer growth direction
             if (existingFacing == clickedFace && currentLayers < 8) {
+                // Play sound when adding a layer
+                if (!context.getLevel().isClientSide) {
+                    BlockEntity be = context.getLevel().getBlockEntity(pos);
+                    if (be instanceof CopyBlockEntity copyBE) {
+                        BlockState copiedState = copyBE.getCopiedBlock();
+                        if (!copiedState.isAir()) {
+                            playBlockSound(context.getLevel(), pos, copiedState);
+                        }
+                    }
+                }
                 return existingState.setValue(LAYERS, Math.min(8, currentLayers + 1));
             }
         }
@@ -288,6 +307,21 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
         }
 
         return this.defaultBlockState().setValue(FACING, facing);
+    }
+
+    // ========== SOUND HELPER ==========
+    protected void playBlockSound(Level level, BlockPos pos, BlockState copiedState) {
+        if (!level.isClientSide && !copiedState.isAir()) {
+            SoundType soundType = copiedState.getSoundType(level, pos, null);
+            level.playSound(
+                    null,
+                    pos,
+                    soundType.getPlaceSound(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,
+                    (soundType.getVolume() + 1.0F) / 2.0F,
+                    soundType.getPitch() * 0.8F
+            );
+        }
     }
 
     @Override
@@ -359,12 +393,15 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
 
             if (!currentCopied.isAir()) {
                 if (currentCopied.getBlock() == targetBlock) {
+                    // Already has this block, just update rotation (no sound)
                     copyBlockEntity.setCopiedBlock(targetState);
                     return InteractionResult.SUCCESS;
                 } else return InteractionResult.FAIL;
             } else {
+                // First time placing a block - play sound
                 if (!player.isCreative()) heldItem.shrink(1);
                 copyBlockEntity.setCopiedBlock(targetState);
+                playBlockSound(level, pos, targetState);
                 return InteractionResult.SUCCESS;
             }
         }
