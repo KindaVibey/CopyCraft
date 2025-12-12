@@ -58,12 +58,13 @@ public class Imitari {
 
         event.enqueueWork(() -> {
             try {
-                com.vibey.imitari.vs2.CopyCraftWeights.register();
+                // Register the NEW dynamic mass system
+                com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
                 LOGGER.info("Successfully registered Imitari VS2 dynamic mass system!");
             } catch (NoClassDefFoundError e) {
                 LOGGER.info("Valkyrien Skies not installed - skipping VS2 integration");
             } catch (Exception e) {
-                LOGGER.error("Failed to register VS2 weights", e);
+                LOGGER.error("Failed to register VS2 dynamic mass system", e);
             }
         });
     }

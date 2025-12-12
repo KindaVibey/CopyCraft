@@ -17,8 +17,6 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -26,21 +24,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base implementation that handles all delegation to ICopyBlock.
- *
- * EXTEND THIS for easy CopyBlock creation - just pass mass multiplier!
- *
- * Example:
- *   public class MyCustomCopyBlock extends CopyBlockBase {
- *       public MyCustomCopyBlock(Properties properties) {
- *           super(properties, 0.75f); // That's it!
- *       }
- *   }
+ * Simplified CopyBlockBase without BlockState mass encoding.
+ * Mass is now handled dynamically via VS2's onSetBlock system.
  */
 public class CopyBlockBase extends Block implements EntityBlock, ICopyBlock {
-    public static final IntegerProperty MASS_HIGH = IntegerProperty.create("mass_high", 0, 15);
-    public static final IntegerProperty MASS_LOW = IntegerProperty.create("mass_low", 0, 15);
-
     private final float massMultiplier;
 
     public CopyBlockBase(Properties properties) {
@@ -50,14 +37,6 @@ public class CopyBlockBase extends Block implements EntityBlock, ICopyBlock {
     public CopyBlockBase(Properties properties, float massMultiplier) {
         super(properties);
         this.massMultiplier = massMultiplier;
-        this.registerDefaultState(this.stateDefinition.any()
-                .setValue(MASS_HIGH, 0)
-                .setValue(MASS_LOW, 0));
-    }
-
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(MASS_HIGH, MASS_LOW);
     }
 
     @Override
@@ -66,7 +45,6 @@ public class CopyBlockBase extends Block implements EntityBlock, ICopyBlock {
     }
 
     // ==================== DELEGATION TO ICOPYBLOCK ====================
-    // These methods call the interface implementations which use getMassMultiplier()
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
@@ -138,38 +116,5 @@ public class CopyBlockBase extends Block implements EntityBlock, ICopyBlock {
     @Override
     public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
         return false;
-    }
-
-    // ==================== MASS ENCODING UTILITIES ====================
-
-    public static int encodeMass(double mass) {
-        mass = Math.max(0, Math.min(4400, mass));
-        if (mass < 50) return (int) mass;
-        else if (mass < 150) return 50 + (int) ((mass - 50) / 2);
-        else if (mass < 400) return 100 + (int) ((mass - 150) / 5);
-        else if (mass < 900) return 150 + (int) ((mass - 400) / 10);
-        else return Math.min(255, 200 + (int) ((mass - 900) / 50));
-    }
-
-    public static double decodeMass(int encoded) {
-        if (encoded < 50) return encoded;
-        else if (encoded < 100) return 50 + (encoded - 50) * 2.0;
-        else if (encoded < 150) return 150 + (encoded - 100) * 5.0;
-        else if (encoded < 200) return 400 + (encoded - 150) * 10.0;
-        else return 900 + (encoded - 200) * 50.0;
-    }
-
-    public static double decodeMass(BlockState state) {
-        int high = state.getValue(MASS_HIGH);
-        int low = state.getValue(MASS_LOW);
-        int encoded = high * 16 + low;
-        return decodeMass(encoded);
-    }
-
-    public static BlockState setMass(BlockState state, double mass) {
-        int encoded = encodeMass(mass);
-        int high = encoded / 16;
-        int low = encoded % 16;
-        return state.setValue(MASS_HIGH, high).setValue(MASS_LOW, low);
     }
 }

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Slab-sized CopyBlock variant (0.5x multiplier).
- * Now uses the simplified delegation system.
+ * Now uses the simplified delegation system without mass properties.
  */
 public class CopyBlockSlab extends CopyBlockBase {
     protected static final VoxelShape BOTTOM_SHAPE = Block.box(0, 0, 0, 16, 8, 16);
@@ -34,9 +34,7 @@ public class CopyBlockSlab extends CopyBlockBase {
     public CopyBlockSlab(Properties properties) {
         super(properties, 0.5f);
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM)
-                .setValue(MASS_HIGH, 0)
-                .setValue(MASS_LOW, 0));
+                .setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM));
     }
 
     @Override
@@ -64,7 +62,6 @@ public class CopyBlockSlab extends CopyBlockBase {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
         builder.add(BlockStateProperties.SLAB_TYPE);
     }
 

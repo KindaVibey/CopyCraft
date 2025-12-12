@@ -1,6 +1,5 @@
 package com.vibey.imitari.blockentity;
 
-import com.vibey.imitari.block.CopyBlockBase;
 import com.vibey.imitari.block.ICopyBlock;
 import com.vibey.imitari.client.ClientEventsHandler;
 import com.vibey.imitari.client.CopyBlockModel;
@@ -64,14 +63,16 @@ public class CopyBlockEntity extends BlockEntity {
         setChanged();
 
         if (level != null && !level.isClientSide) {
-            // Calculate and update mass in BlockState for VS2
-            updateMassInBlockState(newBlock);
-
-            // Invalidate VS cache for this position
+            // NEW: Use the VS2 dynamic mass system
             try {
-                com.vibey.imitari.vs2.CopyCraftWeights.invalidateCache(worldPosition);
+                com.vibey.imitari.vs2.VS2CopyBlockIntegration.updateCopyBlockMass(
+                        level, worldPosition, getBlockState()
+                );
             } catch (NoClassDefFoundError e) {
-                // VS not installed, ignore
+                // VS2 not installed, that's fine
+            } catch (Exception e) {
+                System.err.println("[Imitari] Error updating VS2 mass:");
+                e.printStackTrace();
             }
 
             // Send update packet to all clients
@@ -86,53 +87,6 @@ public class CopyBlockEntity extends BlockEntity {
                         " -> " + (newBlock.isAir() ? "EMPTY" : newBlock.getBlock().getName().getString()));
             }
         }
-    }
-
-    /**
-     * Update the mass in the BlockState based on the copied block's mass
-     */
-    private void updateMassInBlockState(BlockState copiedBlock) {
-        if (level == null || level.isClientSide) return;
-
-        BlockState currentState = getBlockState();
-        if (!(currentState.getBlock() instanceof ICopyBlock copyBlock)) {
-            return;
-        }
-
-        double finalMass = 0.0;
-
-        if (!copiedBlock.isAir()) {
-            try {
-                // Get mass from VS2 system
-                kotlin.Pair<Double, org.valkyrienskies.core.apigame.world.chunks.BlockType> blockInfo =
-                        org.valkyrienskies.mod.common.BlockStateInfo.INSTANCE.get(copiedBlock);
-
-                if (blockInfo != null && blockInfo.getFirst() != null) {
-                    Double copiedMass = blockInfo.getFirst();
-                    float multiplier = copyBlock.getMassMultiplier();
-                    finalMass = copiedMass * multiplier;
-
-                    System.out.println("[Imitari] Copying " + copiedBlock.getBlock().getName().getString() +
-                            ": " + copiedMass + "kg × " + multiplier + " = " + finalMass + "kg");
-                } else {
-                    // Fallback mass if VS2 doesn't have data
-                    finalMass = 50.0 * copyBlock.getMassMultiplier();
-                    System.out.println("[Imitari] No VS2 data for " + copiedBlock.getBlock().getName().getString() +
-                            ", using fallback: " + finalMass + "kg");
-                }
-            } catch (NoClassDefFoundError e) {
-                // VS not installed, use default mass
-                finalMass = 50.0 * copyBlock.getMassMultiplier();
-                System.out.println("[Imitari] VS2 not installed, using default mass: " + finalMass + "kg");
-            }
-        }
-
-        // Store mass in BlockState using piecewise encoding
-        BlockState newState = CopyBlockBase.setMass(currentState, finalMass);
-        level.setBlock(worldPosition, newState, Block.UPDATE_ALL);
-
-        System.out.println("[Imitari] Set mass in BlockState: " + finalMass + "kg (encoded as " +
-                CopyBlockBase.encodeMass(finalMass) + ")");
     }
 
     private void rotateBlock() {
@@ -268,12 +222,6 @@ public class CopyBlockEntity extends BlockEntity {
     @Override
     public void setRemoved() {
         super.setRemoved();
-        if (level != null && !level.isClientSide) {
-            try {
-                com.vibey.imitari.vs2.CopyCraftWeights.invalidateCache(worldPosition);
-            } catch (NoClassDefFoundError e) {
-                // VS not installed, ignore
-            }
-        }
+        // No cache to clear anymore - VS2 tracks mass via onSetBlock calls
     }
 }

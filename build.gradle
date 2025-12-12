@@ -138,18 +138,12 @@ dependencies {
 
     //annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // VS2 as OPTIONAL
-    compileOnly fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:2.1.3-beta.1+a52f38bd68") {
-        exclude group: 'com.simibubi', module: ''
-        transitive = false
-    }
-    compileOnly "thedarkcolour:kotlinforforge:4.3.0"
-
-    compileOnly fg.deobf("maven.modrinth:modernfix:PbIMs8a8")
-
-    // For testing with VS2 in dev
-    //runtimeOnly("org.valkyrienskies:valkyrienskies-120-forge:2.1.3-beta.1+a52f38bd68")
-    //runtimeOnly "thedarkcolour:kotlinforforge:4.3.0"
+    compileOnly         ("org.valkyrienskies.core:api:${vs_core_version}")
+    compileOnly         ("org.valkyrienskies.core:impl:${vs_core_version}")
+    compileOnly         ("org.valkyrienskies.core:api-game:${vs_core_version}")
+    compileOnly         ("org.valkyrienskies.core:util:${vs_core_version}")
+    compileOnly fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs2_version}")
+    compileOnly "thedarkcolour:kotlinforforge:4.10.0"
 }
 
 

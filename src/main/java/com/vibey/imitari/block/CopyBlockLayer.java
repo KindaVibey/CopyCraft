@@ -6,7 +6,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -42,8 +41,6 @@ import org.jetbrains.annotations.Nullable;
 public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final IntegerProperty LAYERS = IntegerProperty.create("layers", 1, 8);
-    public static final IntegerProperty MASS_HIGH = IntegerProperty.create("mass_high", 0, 15);
-    public static final IntegerProperty MASS_LOW = IntegerProperty.create("mass_low", 0, 15);
 
     // Shapes for each direction and layer count [direction][layers]
     protected static final VoxelShape[][] SHAPES = new VoxelShape[6][9];
@@ -127,9 +124,7 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
         this.baseMultiplier = baseMultiplier;
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.UP)
-                .setValue(LAYERS, 1)
-                .setValue(MASS_HIGH, 0)
-                .setValue(MASS_LOW, 0));
+                .setValue(LAYERS, 1));
     }
 
     @Override
@@ -155,7 +150,7 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, LAYERS, MASS_HIGH, MASS_LOW);
+        builder.add(FACING, LAYERS);
     }
 
     @Override

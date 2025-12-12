@@ -11,7 +11,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -19,18 +18,15 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Stairs-sized CopyBlock variant (0.75x multiplier).
  * Extends StairBlock and implements ICopyBlock with manual delegation.
+ * No mass properties - uses dynamic VS2 calculation.
  */
 public class CopyBlockStairs extends StairBlock implements EntityBlock, ICopyBlock {
-    public static final IntegerProperty MASS_HIGH = IntegerProperty.create("mass_high", 0, 15);
-    public static final IntegerProperty MASS_LOW = IntegerProperty.create("mass_low", 0, 15);
 
     public CopyBlockStairs(Properties properties) {
         super(() -> Blocks.OAK_PLANKS.defaultBlockState(), properties);
@@ -39,12 +35,6 @@ public class CopyBlockStairs extends StairBlock implements EntityBlock, ICopyBlo
     @Override
     public float getMassMultiplier() {
         return 0.75f;
-    }
-
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(MASS_HIGH, MASS_LOW);
     }
 
     @Override
