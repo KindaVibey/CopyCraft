@@ -27,6 +27,10 @@ public class VS2CopyBlockIntegration implements BlockStateInfoProvider {
 
     private static final double EMPTY_COPY_BLOCK_MASS = 10.0;
 
+    // Thread-local context for accessing block entities during getBlockStateMass
+    private static final ThreadLocal<Level> CURRENT_LEVEL = new ThreadLocal<>();
+    private static final ThreadLocal<BlockPos> CURRENT_POS = new ThreadLocal<>();
+
     @Override
     public int getPriority() {
         return 200;
@@ -35,13 +39,28 @@ public class VS2CopyBlockIntegration implements BlockStateInfoProvider {
     @Nullable
     @Override
     public Double getBlockStateMass(BlockState blockState) {
-        // If this is a copy block, return its mass based on what it's copying
-        if (blockState.getBlock() instanceof ICopyBlock copyBlock) {
-            // We can't access the block entity here, so return the empty mass
-            // The actual mass will be set via updateCopyBlockMass
-            return EMPTY_COPY_BLOCK_MASS;
+        if (!(blockState.getBlock() instanceof ICopyBlock copyBlock)) {
+            return null;
         }
-        return null;
+
+        // Try to get the actual mass from the block entity if we have context
+        Level level = CURRENT_LEVEL.get();
+        BlockPos pos = CURRENT_POS.get();
+
+        if (level != null && pos != null) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof CopyBlockEntity copyBE) {
+                BlockState copiedBlock = copyBE.getCopiedBlock();
+                if (copiedBlock != null && !copiedBlock.isAir()) {
+                    Pair<Double, BlockType> info = BlockStateInfo.INSTANCE.get(copiedBlock);
+                    double copiedMass = (info != null && info.getFirst() != null) ? info.getFirst() : 50.0;
+                    return copiedMass * copyBlock.getMassMultiplier();
+                }
+            }
+        }
+
+        // Default to empty mass
+        return EMPTY_COPY_BLOCK_MASS;
     }
 
     @Nullable
@@ -94,21 +113,28 @@ public class VS2CopyBlockIntegration implements BlockStateInfoProvider {
             newMass = copiedMass * copyBlock.getMassMultiplier();
         }
 
-        // Get block type info
-        Pair<Double, BlockType> blockInfo = BlockStateInfo.INSTANCE.get(copyBlockState);
-        if (blockInfo == null) return;
+        // Get block type info - use context to help getBlockStateMass work
+        CURRENT_LEVEL.set(level);
+        CURRENT_POS.set(pos);
+        try {
+            Pair<Double, BlockType> blockInfo = BlockStateInfo.INSTANCE.get(copyBlockState);
+            if (blockInfo == null) return;
 
-        // Update VS2 - this tells VS2 to change the mass from oldMass to newMass
-        var shipWorld = VSGameUtilsKt.getShipObjectWorld(level);
-        if (shipWorld != null) {
-            shipWorld.onSetBlock(
-                    pos.getX(), pos.getY(), pos.getZ(),
-                    VSGameUtilsKt.getDimensionId(level),
-                    blockInfo.getSecond(),
-                    blockInfo.getSecond(),
-                    oldMass,
-                    newMass
-            );
+            // Update VS2 - this tells VS2 to change the mass from oldMass to newMass
+            var shipWorld = VSGameUtilsKt.getShipObjectWorld(level);
+            if (shipWorld != null) {
+                shipWorld.onSetBlock(
+                        pos.getX(), pos.getY(), pos.getZ(),
+                        VSGameUtilsKt.getDimensionId(level),
+                        blockInfo.getSecond(),
+                        blockInfo.getSecond(),
+                        oldMass,
+                        newMass
+                );
+            }
+        } finally {
+            CURRENT_LEVEL.remove();
+            CURRENT_POS.remove();
         }
     }
 

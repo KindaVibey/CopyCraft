@@ -87,6 +87,8 @@ public class CopyBlockEntity extends BlockEntity {
         } else {
             System.out.println("[Imitari DEBUG] Skipping VS2 - either client side or level is null");
         }
+
+
     }
 
     private void rotateBlock() {
@@ -222,6 +224,5 @@ public class CopyBlockEntity extends BlockEntity {
     @Override
     public void setRemoved() {
         super.setRemoved();
-        // No cache to clear anymore - VS2 tracks mass via onSetBlock calls
     }
 }
