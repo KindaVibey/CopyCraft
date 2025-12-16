@@ -39,11 +39,25 @@ public class CopyBlockSlab extends CopyBlockBase {
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @javax.annotation.Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
-        super.setPlacedBy(level, pos, state, placer, stack);
+        // DON'T call super.setPlacedBy() because it calls copyblock$setPlacedBy which clears the block
+        // We need custom logic for slabs
+
         if (!level.isClientSide) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof CopyBlockEntity copyBE) {
-                copyBE.setCopiedBlock(Blocks.AIR.defaultBlockState());
+                SlabType type = state.getValue(BlockStateProperties.SLAB_TYPE);
+
+                System.out.println("[Imitari Slab] setPlacedBy called! Type: " + type);
+                System.out.println("[Imitari Slab] Current copied block: " +
+                        (copyBE.getCopiedBlock().isAir() ? "AIR" : copyBE.getCopiedBlock().getBlock().getName().getString()));
+
+                // Only clear if this is a newly placed SINGLE slab with no copied block yet
+                if (type != SlabType.DOUBLE && copyBE.getCopiedBlock().isAir()) {
+                    System.out.println("[Imitari Slab] Clearing copied block (new single slab)");
+                    copyBE.setCopiedBlock(Blocks.AIR.defaultBlockState());
+                } else {
+                    System.out.println("[Imitari Slab] Preserving copied block!");
+                }
             }
         }
     }
@@ -71,11 +85,16 @@ public class CopyBlockSlab extends CopyBlockBase {
         BlockState state = context.getLevel().getBlockState(pos);
 
         if (state.is(this)) {
+            System.out.println("[Imitari Slab] getStateForPlacement - converting to double slab");
+
             // Play sound when completing to double slab
             if (!context.getLevel().isClientSide) {
                 BlockEntity be = context.getLevel().getBlockEntity(pos);
                 if (be instanceof CopyBlockEntity copyBE) {
                     BlockState copiedState = copyBE.getCopiedBlock();
+                    System.out.println("[Imitari Slab] Before conversion, copied block: " +
+                            (copiedState.isAir() ? "AIR" : copiedState.getBlock().getName().getString()));
+
                     if (!copiedState.isAir()) {
                         playBlockSound(context.getLevel(), pos, copiedState);
                     }
@@ -103,6 +122,49 @@ public class CopyBlockSlab extends CopyBlockBase {
                     (soundType.getVolume() + 1.0F) / 2.0F,
                     soundType.getPitch() * 0.8F
             );
+        }
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+        super.onPlace(state, level, pos, oldState, isMoving);
+
+        System.out.println("[Imitari Slab] onPlace called!");
+        System.out.println("[Imitari Slab] Old state: " + oldState);
+        System.out.println("[Imitari Slab] New state: " + state);
+
+        // If we just changed from single to double slab (or vice versa), refresh the model
+        if (!oldState.is(state.getBlock())) {
+            System.out.println("[Imitari Slab] Different block, ignoring");
+            return; // Different block, not our concern
+        }
+
+        SlabType oldType = oldState.hasProperty(BlockStateProperties.SLAB_TYPE) ?
+                oldState.getValue(BlockStateProperties.SLAB_TYPE) : SlabType.BOTTOM;
+        SlabType newType = state.getValue(BlockStateProperties.SLAB_TYPE);
+
+        System.out.println("[Imitari Slab] Old type: " + oldType + ", New type: " + newType);
+
+        // If we went from single to double (or double to single), refresh textures
+        if (oldType != newType) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof CopyBlockEntity copyBE) {
+                System.out.println("[Imitari Slab] Type changed! Copied block: " +
+                        (copyBE.getCopiedBlock().isAir() ? "AIR" : copyBE.getCopiedBlock().getBlock().getName().getString()));
+
+                if (level.isClientSide) {
+                    // Client side - schedule model refresh for next tick
+                    net.minecraft.client.Minecraft.getInstance().execute(() -> {
+                        BlockEntity stillThere = level.getBlockEntity(pos);
+                        if (stillThere instanceof CopyBlockEntity copyBE2) {
+                            copyBE2.forceModelRefresh();
+                        }
+                    });
+                } else {
+                    // Server side - send update to clients
+                    level.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS);
+                }
+            }
         }
     }
 

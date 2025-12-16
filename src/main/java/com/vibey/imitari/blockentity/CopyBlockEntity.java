@@ -48,6 +48,31 @@ public class CopyBlockEntity extends BlockEntity {
         this.removedByCreative = value;
     }
 
+    /**
+     * Force a model/texture refresh. Call this whenever the block shape changes
+     * (like slab -> double slab) to ensure textures update properly.
+     */
+    public void forceModelRefresh() {
+        if (level != null) {
+            requestModelDataUpdate();
+
+            if (level.isClientSide) {
+                // Client-side: force chunk re-render
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                        ClientEventsHandler.queueBlockUpdate(worldPosition)
+                );
+
+                // Also force immediate block update
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
+                        Block.UPDATE_ALL_IMMEDIATE);
+            } else {
+                // Server-side: notify all clients
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(),
+                        Block.UPDATE_ALL);
+            }
+        }
+    }
+
     public void setCopiedBlock(BlockState newBlock) {
         System.out.println("[Imitari DEBUG] setCopiedBlock called! isClientSide=" +
                 (level != null ? level.isClientSide : "level is null"));
@@ -87,8 +112,6 @@ public class CopyBlockEntity extends BlockEntity {
         } else {
             System.out.println("[Imitari DEBUG] Skipping VS2 - either client side or level is null");
         }
-
-
     }
 
     private void rotateBlock() {
@@ -107,8 +130,6 @@ public class CopyBlockEntity extends BlockEntity {
                 .with(CopyBlockModel.VIRTUAL_ROTATION, virtualRotation)
                 .build();
     }
-
-    // Add this to your CopyBlockEntity.java load() method:
 
     @Override
     public void load(CompoundTag tag) {

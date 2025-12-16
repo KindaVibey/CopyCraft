@@ -57,12 +57,7 @@ public class Imitari {
         LOGGER.info("Imitari common setup complete!");
 
         event.enqueueWork(() -> {
-            try {
-                com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
-                LOGGER.info("Successfully registered VS2 CopyBlock mass provider!");
-            } catch (Exception e) {
-                LOGGER.error("Failed to register VS2 provider", e);
-            }
+            com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
         });
     }
 
