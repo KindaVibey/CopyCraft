@@ -3,8 +3,8 @@
 
 package com.vibey.imitari.vs2;
 
+import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.Imitari;
-import com.vibey.imitari.block.ICopyBlock;
 import com.vibey.imitari.blockentity.CopyBlockEntity;
 import kotlin.Pair;
 import kotlin.Triple;

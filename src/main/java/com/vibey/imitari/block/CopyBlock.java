@@ -1,5 +1,7 @@
 package com.vibey.imitari.block;
 
+import com.vibey.imitari.block.base.CopyBlockBase;
+
 /**
  * Legacy CopyBlock class for backwards compatibility.
  * Just extends the base implementation with default settings.

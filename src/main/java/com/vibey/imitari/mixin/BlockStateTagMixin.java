@@ -1,6 +1,6 @@
 package com.vibey.imitari.mixin;
 
-import com.vibey.imitari.block.ICopyBlock;
+import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.util.CopyBlockContext;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;

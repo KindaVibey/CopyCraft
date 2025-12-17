@@ -1,13 +1,13 @@
 package com.vibey.imitari;
 
 import com.mojang.logging.LogUtils;
+import com.vibey.imitari.api.registration.CopyBlockRegistration;
 import com.vibey.imitari.client.CopyBlockModelProvider;
 import com.vibey.imitari.registry.ModBlockEntities;
 import com.vibey.imitari.registry.ModBlocks;
 import com.vibey.imitari.registry.ModItems;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -21,44 +21,53 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
+/**
+ * Main mod class for Imitari.
+ * Provides an API for creating blocks that copy and mimic other blocks.
+ *
+ * @see com.vibey.imitari.api.ICopyBlock
+ * @see com.vibey.imitari.api.CopyBlockAPI
+ */
 @Mod(Imitari.MODID)
 public class Imitari {
     public static final String MODID = "imitari";
+    public static final String VERSION = "2.0.0";
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Imitari() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        System.out.println("Imitari constructor called!");
+        LOGGER.info("Initializing Imitari v{}", VERSION);
 
+        // Setup event listeners
         modEventBus.addListener(this::commonSetup);
 
+        // Register mod content
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
-        // Manually register our blocks (safer than auto-register)
-        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block"));
-        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_ghost"));
-        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_slab"));
-        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_stairs"));
-        CopyBlockModelProvider.registerBlock(new ResourceLocation(MODID, "copy_block_layer"));
-
-        // Register the new model provider system
+        // Register model provider for client rendering
         modEventBus.addListener(CopyBlockModelProvider::onModelBake);
-        System.out.println("Registered CopyBlock model provider!");
+        LOGGER.info("Registered CopyBlock model provider");
 
+        // Forge event bus
         MinecraftForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("Imitari common setup complete!");
-
         event.enqueueWork(() -> {
+            // Register all Imitari CopyBlocks with the API
+            int count = CopyBlockRegistration.registerForMod(MODID);
+            LOGGER.info("Registered {} CopyBlocks with Imitari API", count);
+
+            // Initialize VS2 integration (if present)
             com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
         });
+
+        LOGGER.info("Imitari common setup complete!");
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
@@ -72,14 +81,19 @@ public class Imitari {
         LOGGER.info("Imitari server starting");
     }
 
+    /**
+     * Client-side setup events.
+     */
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
+
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             LOGGER.info("Imitari client setup");
 
             event.enqueueWork(() -> {
-                // FIX: Allow both cutout and translucent render types
+                // Allow both cutout and translucent render types for all CopyBlocks
+                // This enables proper rendering of glass, water, etc. when copied
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK.get(),
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_GHOST.get(),
@@ -90,6 +104,8 @@ public class Imitari {
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_LAYER.get(),
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+
+                LOGGER.info("Configured render layers for CopyBlocks");
             });
         }
     }

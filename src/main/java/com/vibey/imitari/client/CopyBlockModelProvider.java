@@ -1,6 +1,6 @@
 package com.vibey.imitari.client;
 
-import com.vibey.imitari.block.ICopyBlock;
+import com.vibey.imitari.api.ICopyBlock;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;

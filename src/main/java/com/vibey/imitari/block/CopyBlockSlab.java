@@ -1,10 +1,10 @@
 package com.vibey.imitari.block;
 
+import com.vibey.imitari.block.base.CopyBlockBase;
 import com.vibey.imitari.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;

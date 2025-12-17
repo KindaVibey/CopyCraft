@@ -1,5 +1,6 @@
 package com.vibey.imitari.block;
 
+import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.blockentity.CopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;

@@ -1,5 +1,7 @@
 package com.vibey.imitari.block;
 
+import com.vibey.imitari.block.base.CopyBlockBase;
+
 /**
  * copyblock with no collision
  */

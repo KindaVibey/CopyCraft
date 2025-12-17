@@ -1,6 +1,5 @@
 package com.vibey.imitari.blockentity;
 
-import com.vibey.imitari.block.ICopyBlock;
 import com.vibey.imitari.client.ClientEventsHandler;
 import com.vibey.imitari.client.CopyBlockModel;
 import com.vibey.imitari.registry.ModBlockEntities;
