@@ -130,9 +130,13 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
 
     @Override
     public float getMassMultiplier() {
-        return baseMultiplier; // Note: Actual multiplier is scaled by layer count
+        return baseMultiplier; // Base multiplier (will be scaled by layer count)
     }
 
+    /**
+     * Get the effective mass multiplier accounting for layer count.
+     * This is what VS2 should use for mass calculation.
+     */
     public float getEffectiveMassMultiplier(BlockState state) {
         int layers = state.getValue(LAYERS);
         return baseMultiplier * layers;
@@ -253,7 +257,18 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
                         }
                     }
                 }
-                return existingState.setValue(LAYERS, Math.min(8, currentLayers + 1));
+
+                // CRITICAL: Store old state for VS2 notification
+                BlockState newState = existingState.setValue(LAYERS, Math.min(8, currentLayers + 1));
+
+                // Notify VS2 of the layer count change (mass multiplier changed!)
+                if (!context.getLevel().isClientSide) {
+                    com.vibey.imitari.vs2.VS2CopyBlockIntegration.onBlockStateChanged(
+                            context.getLevel(), pos, existingState, newState
+                    );
+                }
+
+                return newState;
             }
         }
 

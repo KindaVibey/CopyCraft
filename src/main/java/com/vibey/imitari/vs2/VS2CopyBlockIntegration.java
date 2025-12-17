@@ -113,4 +113,30 @@ public class VS2CopyBlockIntegration {
             System.err.println("[Imitari] Failed to notify VS2 of block entity data load: " + e.getMessage());
         }
     }
+
+    /**
+     * Notify VS2 that a block's state has changed (e.g., layer count, slab type).
+     * This updates the mass calculation when the mass multiplier changes.
+     *
+     * @param level The world
+     * @param pos The block position
+     * @param oldState The previous block state
+     * @param newState The new block state
+     */
+    public static void onBlockStateChanged(Level level, BlockPos pos,
+                                           BlockState oldState,
+                                           BlockState newState) {
+        if (!isAvailable()) {
+            return;
+        }
+
+        try {
+            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            var method = implClass.getMethod("onBlockStateChanged",
+                    Level.class, BlockPos.class, BlockState.class, BlockState.class);
+            method.invoke(null, level, pos, oldState, newState);
+        } catch (Exception e) {
+            System.err.println("[Imitari] Failed to notify VS2 of block state change: " + e.getMessage());
+        }
+    }
 }
