@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  *
  * <p><b>For Custom Shapes:</b></p>
- * <p>If you need custom shapes (stairs, slabs, etc), override the shape methods:</p>
+ * <p>If you need custom shapes (stairs, slabs, etc.), override the shape methods:</p>
  * <pre>{@code
  * @Override
  * public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
