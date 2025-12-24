@@ -18,7 +18,6 @@ import java.util.Set;
 public class CopyBlockModelProvider {
 
     private static final Set<ResourceLocation> REGISTERED_BLOCKS = new HashSet<>();
-    //private static boolean modelsWrapped = false; // prevent infinite wrapping/reload loops
 
     public static void registerBlock(ResourceLocation blockId) {
         REGISTERED_BLOCKS.add(blockId);
@@ -43,30 +42,46 @@ public class CopyBlockModelProvider {
     }
 
     public static void onModelBake(ModelEvent.ModifyBakingResult event) {
-        // Prevent multiple wrapping that could cause reload loops
-        //if (modelsWrapped) return;
-        //modelsWrapped = true;
-
         Map<ResourceLocation, BakedModel> modelRegistry = event.getModels();
 
         for (Map.Entry<ResourceLocation, BakedModel> entry : modelRegistry.entrySet()) {
-            ResourceLocation id = entry.getKey();
+            ResourceLocation modelId = entry.getKey();
+            BakedModel existingModel = entry.getValue();
 
+            // Skip if already wrapped
+            if (existingModel instanceof CopyBlockModel) {
+                continue;
+            }
+
+            // Check if this model should be wrapped
+            boolean shouldWrap = false;
             for (ResourceLocation blockId : REGISTERED_BLOCKS) {
-                if (!id.getNamespace().equals(blockId.getNamespace())) continue;
+                if (!modelId.getNamespace().equals(blockId.getNamespace())) {
+                    continue;
+                }
 
-                String path = id.getPath();
+                String path = modelId.getPath();
                 String blockName = blockId.getPath();
 
-                if (path.equals(blockName) ||
-                        path.equals(blockName + "_top") ||
-                        path.equals(blockName + "_slab") ||
-                        path.equals(blockName + "_stairs")) {
-
-                    BakedModel existingModel = entry.getValue();
-                    CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
-                    modelRegistry.put(id, wrappedModel);
+                // Match block models and their variants
+                if (path.equals("block/" + blockName) ||
+                        path.equals(blockName) ||
+                        path.equals("block/" + blockName + "_top") ||
+                        path.equals("block/" + blockName + "_slab") ||
+                        path.equals("block/" + blockName + "_slab_top") ||
+                        path.equals("block/" + blockName + "_stairs") ||
+                        path.equals("block/" + blockName + "_stair") ||
+                        path.equals("block/" + blockName + "_stair_inner") ||
+                        path.equals("block/" + blockName + "_stair_outer") ||
+                        path.startsWith("block/" + blockName + "_layer")) {
+                    shouldWrap = true;
+                    break;
                 }
+            }
+
+            if (shouldWrap) {
+                CopyBlockModel wrappedModel = new CopyBlockModel(existingModel);
+                modelRegistry.put(modelId, wrappedModel);
             }
         }
     }
@@ -77,6 +92,5 @@ public class CopyBlockModelProvider {
 
     public static void clearRegistrations() {
         REGISTERED_BLOCKS.clear();
-        //modelsWrapped = false;
     }
 }
