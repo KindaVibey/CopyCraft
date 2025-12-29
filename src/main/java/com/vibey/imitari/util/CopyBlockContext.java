@@ -1,6 +1,6 @@
 package com.vibey.imitari.util;
 
-import com.vibey.imitari.blockentity.CopyBlockEntity;
+import com.vibey.imitari.api.blockentity.ICopyBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.BlockGetter;
@@ -65,7 +65,7 @@ public class CopyBlockContext {
         }
 
         BlockEntity be = ctx.level.getBlockEntity(ctx.pos);
-        if (!(be instanceof CopyBlockEntity copyBE)) {
+        if (!(be instanceof ICopyBlockEntity copyBE)) {
             pop(); // Not our block, clean up
             return null;
         }

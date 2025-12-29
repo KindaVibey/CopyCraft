@@ -1,6 +1,6 @@
 package com.vibey.imitari.client;
 
-import com.vibey.imitari.blockentity.CopyBlockEntity;
+import com.vibey.imitari.api.blockentity.ICopyBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -53,17 +53,12 @@ public class CopyBlockModel implements BakedModel {
                                     @Nullable RenderType renderType) {
 
         BlockState copiedState = data.get(COPIED_STATE);
-        Integer virtualRotation = data.get(VIRTUAL_ROTATION);
         boolean[] cullFaces = data.get(CULL_FACES);
 
         List<BakedQuad> baseQuads = baseModel.getQuads(state, side, rand, ModelData.EMPTY, renderType);
 
         if (copiedState == null || copiedState.isAir()) {
             return baseQuads;
-        }
-
-        if (virtualRotation == null) {
-            virtualRotation = 0;
         }
 
         // Check if this face should be culled (for glass-like behavior)
@@ -75,54 +70,54 @@ public class CopyBlockModel implements BakedModel {
                 .getBlockRenderer()
                 .getBlockModel(copiedState);
 
-        Direction textureFace = applyLogRotation(side, virtualRotation);
+        List<BakedQuad> copiedFaceQuads = getCopiedFaceQuads(copiedModel, copiedState, side, rand, renderType);
+        TextureAtlasSprite fallbackSprite = copiedModel.getParticleIcon(ModelData.EMPTY);
 
-        List<BakedQuad> copiedQuads = copiedModel.getQuads(copiedState, textureFace, rand, ModelData.EMPTY, renderType);
-        if (copiedQuads.isEmpty() && textureFace != null) {
-            copiedQuads = copiedModel.getQuads(copiedState, null, rand, ModelData.EMPTY, renderType);
+        if (copiedFaceQuads.isEmpty()) {
+            List<BakedQuad> remappedQuads = new ArrayList<>(baseQuads.size());
+            for (BakedQuad quad : baseQuads) {
+                remappedQuads.add(remapQuadTexture(quad, fallbackSprite, null, quad.getTintIndex()));
+            }
+            return remappedQuads;
         }
 
-        TextureAtlasSprite sprite;
-        BakedQuad sourceQuad = null;
-        if (!copiedQuads.isEmpty()) {
-            sourceQuad = copiedQuads.get(0);
-            sprite = sourceQuad.getSprite();
-        } else {
-            sprite = copiedModel.getParticleIcon(ModelData.EMPTY);
-        }
-
-        List<BakedQuad> remappedQuads = new ArrayList<>(baseQuads.size());
-        for (BakedQuad quad : baseQuads) {
-            remappedQuads.add(remapQuadTexture(quad, sprite, sourceQuad));
+        List<BakedQuad> remappedQuads = new ArrayList<>(baseQuads.size() * copiedFaceQuads.size());
+        for (BakedQuad baseQuad : baseQuads) {
+            for (BakedQuad sourceQuad : copiedFaceQuads) {
+                remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad, sourceQuad.getTintIndex()));
+            }
         }
 
         return remappedQuads;
     }
 
-    private Direction applyLogRotation(@Nullable Direction face, int rotation) {
-        if (face == null || rotation == 0) {
-            return face;
+    private List<BakedQuad> getCopiedFaceQuads(BakedModel copiedModel, BlockState copiedState,
+                                               @Nullable Direction side, RandomSource rand,
+                                               @Nullable RenderType renderType) {
+        if (side == null) {
+            return Collections.emptyList();
         }
-        return switch (rotation) {
-            case 1 -> switch (face) {
-                case UP -> Direction.SOUTH;
-                case DOWN -> Direction.NORTH;
-                case NORTH -> Direction.DOWN;
-                case SOUTH -> Direction.UP;
-                default -> face;
-            };
-            case 2 -> switch (face) {
-                case UP -> Direction.EAST;
-                case DOWN -> Direction.WEST;
-                case EAST -> Direction.DOWN;
-                case WEST -> Direction.UP;
-                default -> face;
-            };
-            default -> face;
-        };
+
+        List<BakedQuad> faceQuads = copiedModel.getQuads(copiedState, side, rand, ModelData.EMPTY, renderType);
+        if (!faceQuads.isEmpty()) {
+            return faceQuads;
+        }
+
+        List<BakedQuad> allQuads = copiedModel.getQuads(copiedState, null, rand, ModelData.EMPTY, renderType);
+        if (allQuads.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<BakedQuad> filtered = new ArrayList<>();
+        for (BakedQuad quad : allQuads) {
+            if (quad.getDirection() == side) {
+                filtered.add(quad);
+            }
+        }
+        return filtered;
     }
 
-    private BakedQuad remapQuadTexture(BakedQuad originalQuad, TextureAtlasSprite newSprite, @Nullable BakedQuad sourceQuad) {
+    private BakedQuad remapQuadTexture(BakedQuad originalQuad, TextureAtlasSprite newSprite, @Nullable BakedQuad sourceQuad, int tintIndex) {
         int[] vertexData = originalQuad.getVertices().clone();
         TextureAtlasSprite oldSprite = originalQuad.getSprite();
 
@@ -141,8 +136,6 @@ public class CopyBlockModel implements BakedModel {
             vertexData[offset + 5] = Float.floatToRawIntBits(newV);
         }
 
-        int tintIndex = sourceQuad != null ? sourceQuad.getTintIndex() : originalQuad.getTintIndex();
-
         return new BakedQuad(vertexData, tintIndex, originalQuad.getDirection(), newSprite, originalQuad.isShade());
     }
 
@@ -151,9 +144,8 @@ public class CopyBlockModel implements BakedModel {
     public ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos,
                                   @NotNull BlockState state, @NotNull ModelData modelData) {
         BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof CopyBlockEntity copyBE) {
+        if (be instanceof ICopyBlockEntity copyBE) {
             BlockState copiedState = copyBE.getCopiedBlock();
-            int rotation = copyBE.getVirtualRotation();
 
             // Calculate which faces should be culled based on neighbors
             boolean[] cullFaces = new boolean[6];
@@ -171,7 +163,7 @@ public class CopyBlockModel implements BakedModel {
                             continue;
                         }
 
-                        if (neighborBE instanceof CopyBlockEntity neighborCopyBE) {
+                        if (neighborBE instanceof ICopyBlockEntity neighborCopyBE) {
                             BlockState neighborCopied = neighborCopyBE.getCopiedBlock();
                             // Cull if neighbor is copying the same block type
                             if (neighborCopied != null &&
@@ -190,7 +182,7 @@ public class CopyBlockModel implements BakedModel {
 
             return ModelData.builder()
                     .with(COPIED_STATE, copiedState != null ? copiedState : Blocks.AIR.defaultBlockState())
-                    .with(VIRTUAL_ROTATION, rotation)
+                    .with(VIRTUAL_ROTATION, 0)
                     .with(CULL_FACES, cullFaces)
                     .build();
         }

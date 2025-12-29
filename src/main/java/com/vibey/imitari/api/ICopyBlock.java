@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -223,7 +224,10 @@ public interface ICopyBlock {
             // Don't allow copying another CopyBlock
             if (targetBlock instanceof ICopyBlock) return InteractionResult.FAIL;
 
-            BlockState targetState = targetBlock.defaultBlockState();
+            BlockState targetState = targetBlock.getStateForPlacement(new BlockPlaceContext(level, player, hand, heldItem, hit));
+            if (targetState == null) {
+                targetState = targetBlock.defaultBlockState();
+            }
 
             // Only allow full blocks (unless overridden)
             if (!allowPartialBlocks() && !targetState.isCollisionShapeFullBlock(level, pos)) {

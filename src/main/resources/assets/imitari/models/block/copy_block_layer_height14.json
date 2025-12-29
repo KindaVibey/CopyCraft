@@ -3,7 +3,8 @@
   "credit": "Made with Blockbench",
   "parent": "block/thin_block",
   "textures": {
-    "1": "imitari:block/copycraftblock"
+    "1": "imitari:block/copycraftblock",
+    "particle": "imitari:block/copycraftblock"
   },
   "elements": [
     {

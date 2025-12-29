@@ -2,12 +2,17 @@ package com.vibey.imitari;
 
 import com.mojang.logging.LogUtils;
 import com.vibey.imitari.api.registration.CopyBlockRegistration;
+import com.vibey.imitari.api.CopyBlockAPI;
+import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.client.CopyBlockModelProvider;
 import com.vibey.imitari.registry.ModBlockEntities;
 import com.vibey.imitari.registry.ModBlocks;
 import com.vibey.imitari.registry.ModItems;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -20,7 +25,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
+
+import java.util.ArrayList;
 
 /**
  * Main mod class for Imitari.
@@ -105,6 +113,29 @@ public class Imitari {
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.COPY_BLOCK_LAYER.get(),
                         rt -> rt == RenderType.cutout() || rt == RenderType.translucent());
+
+                Minecraft minecraft = Minecraft.getInstance();
+                var blockColors = minecraft.getBlockColors();
+
+                ArrayList<Block> copyBlocks = new ArrayList<>();
+                for (Block block : ForgeRegistries.BLOCKS.getValues()) {
+                    if (block instanceof ICopyBlock) {
+                        copyBlocks.add(block);
+                    }
+                }
+
+                if (!copyBlocks.isEmpty()) {
+                    blockColors.register((state, level, pos, tintIndex) -> {
+                        if (level == null || pos == null) {
+                            return -1;
+                        }
+                        BlockState copiedState = CopyBlockAPI.getCopiedBlock(level, pos);
+                        if (copiedState == null) {
+                            return -1;
+                        }
+                        return blockColors.getColor(copiedState, level, pos, tintIndex);
+                    }, copyBlocks.toArray(Block[]::new));
+                }
 
                 LOGGER.info("Configured render layers for CopyBlocks");
             });

@@ -352,7 +352,10 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
             Block targetBlock = blockItem.getBlock();
             if (targetBlock instanceof ICopyBlock) return InteractionResult.FAIL;
 
-            BlockState targetState = targetBlock.defaultBlockState();
+            BlockState targetState = targetBlock.getStateForPlacement(new BlockPlaceContext(level, player, hand, heldItem, hit));
+            if (targetState == null) {
+                targetState = targetBlock.defaultBlockState();
+            }
             if (!targetState.isCollisionShapeFullBlock(level, pos)) return InteractionResult.FAIL;
 
             if (!currentCopied.isAir()) {

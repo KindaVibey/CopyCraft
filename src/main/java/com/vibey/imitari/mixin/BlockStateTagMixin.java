@@ -28,14 +28,14 @@ public abstract class BlockStateTagMixin {
     private void imitari$checkCopiedTags(TagKey<Block> tag, CallbackInfoReturnable<Boolean> cir) {
         // CRITICAL: Only process if this implements ICopyBlock
         // Early return means ZERO performance impact on all other blocks
-        if (!(this.m_60734_() instanceof ICopyBlock)) {
+        if (!(this.m_60734_() instanceof ICopyBlock copyBlock) || !copyBlock.useDynamicTags()) {
             return;
         }
 
         // Try to get the copied block's tags using our context system
         Boolean result = CopyBlockContext.checkCopiedBlockTag(tag);
 
-        // If we got a result, use it. Otherwise let vanilla behavior continue.
+        // If we got a result, use it. Otherwise, let vanilla behavior continue.
         if (result != null) {
             cir.setReturnValue(result);
         }

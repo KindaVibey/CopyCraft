@@ -85,16 +85,9 @@ public class CopyBlockEntity extends BlockEntity implements ICopyBlockEntity {
 
     @Override
     public void setCopiedBlock(BlockState newBlock) {
-        BlockState oldCopiedBlock = this.copiedBlock;  // SAVE OLD COPIED BLOCK
-
-        // If it's the same block, rotate it
-        if (!copiedBlock.isAir() && !newBlock.isAir() && copiedBlock.getBlock() == newBlock.getBlock()) {
-            rotateBlock();
-        } else {
-            // New block or clearing, reset rotation
-            this.copiedBlock = newBlock;
-            this.virtualRotation = 0;
-        }
+        BlockState oldCopiedBlock = this.copiedBlock;
+        this.copiedBlock = newBlock;
+        this.virtualRotation = 0;
 
         setChanged();
 
@@ -112,10 +105,6 @@ public class CopyBlockEntity extends BlockEntity implements ICopyBlockEntity {
     }
 
     // ==================== INTERNAL METHODS ====================
-
-    private void rotateBlock() {
-        virtualRotation = (virtualRotation + 1) % 3;
-    }
 
     @NotNull
     @Override
