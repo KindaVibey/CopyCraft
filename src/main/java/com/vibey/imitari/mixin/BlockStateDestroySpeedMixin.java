@@ -45,8 +45,12 @@ public abstract class BlockStateDestroySpeedMixin {
                 return;
             }
 
+            net.minecraft.world.level.block.state.BlockState currentState = (net.minecraft.world.level.block.state.BlockState)(Object)this;
             ICopyBlock copyBlock = (ICopyBlock) this.m_60734_();
-            float multipliedSpeed = baseSpeed * copyBlock.getMassMultiplier();
+
+            // Try to get effective mass multiplier via reflection (for addon blocks)
+            float effectiveMultiplier = getEffectiveMassMultiplier(currentState, copyBlock);
+            float multipliedSpeed = baseSpeed * effectiveMultiplier;
 
             cir.setReturnValue(multipliedSpeed);
 
@@ -54,5 +58,29 @@ public abstract class BlockStateDestroySpeedMixin {
             System.err.println("[Imitari] ERROR in getDestroySpeed mixin:");
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Get the effective mass multiplier for any ICopyBlock implementation.
+     * First tries to call getEffectiveMassMultiplier(BlockState) via reflection (for addon-friendly support),
+     * then falls back to getMassMultiplier().
+     */
+    private float getEffectiveMassMultiplier(net.minecraft.world.level.block.state.BlockState state, ICopyBlock copyBlock) {
+        try {
+            // Try to call getEffectiveMassMultiplier(BlockState) if it exists
+            java.lang.reflect.Method method = copyBlock.getClass().getMethod("getEffectiveMassMultiplier", net.minecraft.world.level.block.state.BlockState.class);
+            Object result = method.invoke(copyBlock, state);
+            if (result instanceof Float) {
+                return (Float) result;
+            }
+        } catch (NoSuchMethodException e) {
+            // Method doesn't exist - this is normal for blocks without effective multiplier
+        } catch (Exception e) {
+            // Other reflection errors - log but continue
+            System.err.println("[Imitari] Failed to call getEffectiveMassMultiplier via reflection: " + e.getMessage());
+        }
+
+        // Fallback: use base multiplier
+        return copyBlock.getMassMultiplier();
     }
 }

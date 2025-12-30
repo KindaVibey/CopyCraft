@@ -230,13 +230,19 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
         if (level.isClientSide) return;
         if (!(newState.getBlock() instanceof ICopyBlock copyBlock)) return;
 
+        // CRITICAL: Ensure the BlockEntity exists and is the right type
         BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof CopyBlockEntity copyBE)) return;
+        if (!(be instanceof CopyBlockEntity copyBE)) {
+            System.err.println("[Imitari VS2] BlockEntity not found during state change - skipping mass update");
+            return;
+        }
 
         BlockState copiedBlock = copyBE.getCopiedBlock();
 
-        // If there's no copied block, both old and new mass are 10kg - no change needed
+        // If there's no copied block, mass is always 10kg regardless of layer count
+        // No mass change happens when stacking empty layers
         if (copiedBlock == null || copiedBlock.isAir()) {
+            System.out.println("[Imitari VS2] Stacking empty layers - mass stays at 10kg");
             return;
         }
 
@@ -245,7 +251,10 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
         float newMultiplier = INSTANCE.getEffectiveMassMultiplier(newState, copyBlock);
 
         // Only update if multiplier actually changed
-        if (Math.abs(oldMultiplier - newMultiplier) < 0.001f) return;
+        if (Math.abs(oldMultiplier - newMultiplier) < 0.001f) {
+            System.out.println("[Imitari VS2] Multiplier unchanged - no mass update needed");
+            return;
+        }
 
         Pair<Double, VsiBlockType> copiedInfo = BlockStateInfo.INSTANCE.get(copiedBlock);
         double baseMass = (copiedInfo != null && copiedInfo.getFirst() != null) ? copiedInfo.getFirst() : 50.0;
@@ -253,10 +262,10 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
         double oldMass = baseMass * oldMultiplier;
         double newMass = baseMass * newMultiplier;
 
-        System.out.println("[Imitari VS2] Block state changed! Mass: " + oldMass + " -> " + newMass +
-                " (multiplier: " + oldMultiplier + " -> " + newMultiplier + ")");
+        System.out.println("[Imitari VS2] Block state changed! Copied: " + copiedBlock.getBlock().getName().getString() +
+                ", Mass: " + oldMass + " -> " + newMass + " (multiplier: " + oldMultiplier + " -> " + newMultiplier + ")");
 
-        // Update VS2
+        // Set context for any getBlockStateMass calls
         CURRENT_LEVEL.set(level);
         CURRENT_POS.set(pos);
         try {
