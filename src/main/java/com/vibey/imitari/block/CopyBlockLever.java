@@ -59,11 +59,16 @@ public class CopyBlockLever extends LeverBlock implements EntityBlock, ICopyBloc
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        // If not sneaking, use vanilla lever logic
-        if (!player.isShiftKeyDown()) {
+        // Check if a block has been copied
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        boolean hasCopiedBlock = blockEntity instanceof com.vibey.imitari.api.blockentity.ICopyBlockEntity copyBE &&
+                                 !copyBE.getCopiedBlock().isAir();
+
+        // If not sneaking and has copied block, use vanilla lever logic
+        if (!player.isShiftKeyDown() && hasCopiedBlock) {
             return super.use(state, level, pos, player, hand, hit);
         }
-        // If sneaking, try CopyBlock logic
+        // If sneaking, or no copied block, try CopyBlock logic
         return copyblock$use(state, level, pos, player, hand, hit);
     }
 

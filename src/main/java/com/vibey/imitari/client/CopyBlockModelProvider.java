@@ -55,27 +55,31 @@ public class CopyBlockModelProvider {
 
             // Check if this model should be wrapped
             boolean shouldWrap = false;
-            for (ResourceLocation blockId : REGISTERED_BLOCKS) {
-                if (!modelId.getNamespace().equals(blockId.getNamespace())) {
-                    continue;
-                }
+            String path = modelId.getPath();
 
-                String path = modelId.getPath();
-                String blockName = blockId.getPath();
+            // Simple pattern matching for Imitari CopyBlocks
+            if (modelId.getNamespace().equals("imitari") &&
+                (path.startsWith("block/copy_block_") ||
+                 path.equals("item/copy_block"))) {
+                shouldWrap = true;
+            }
 
-                // Match block models and their variants
-                if (path.equals("block/" + blockName) ||
-                        path.equals(blockName) ||
-                        path.equals("block/" + blockName + "_top") ||
-                        path.equals("block/" + blockName + "_slab") ||
-                        path.equals("block/" + blockName + "_slab_top") ||
-                        path.equals("block/" + blockName + "_stairs") ||
-                        path.equals("block/" + blockName + "_stair") ||
-                        path.equals("block/" + blockName + "_stair_inner") ||
-                        path.equals("block/" + blockName + "_stair_outer") ||
-                        path.startsWith("block/" + blockName + "_layer")) {
-                    shouldWrap = true;
-                    break;
+            // Also check registered blocks for addon compatibility
+            if (!shouldWrap) {
+                for (ResourceLocation blockId : REGISTERED_BLOCKS) {
+                    if (!modelId.getNamespace().equals(blockId.getNamespace())) {
+                        continue;
+                    }
+
+                    String blockName = blockId.getPath();
+
+                    // Match block models and their variants/sub-models
+                    if (path.equals("block/" + blockName) ||
+                            path.equals(blockName) ||
+                            path.startsWith("block/" + blockName + "_")) {
+                        shouldWrap = true;
+                        break;
+                    }
                 }
             }
 

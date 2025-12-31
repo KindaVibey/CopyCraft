@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "imitari:block/copy_block_ladder",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "imitari:block/copy_block_ladder"
+    },
+    "facing=south": {
+      "model": "imitari:block/copy_block_ladder",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imitari:block/copy_block_ladder",
+      "y": 270
+    }
+  }
+}

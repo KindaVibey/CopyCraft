@@ -72,6 +72,11 @@ public class CopyBlockModel implements BakedModel {
 
         // Get ALL quads for the SPECIFIC DIRECTION we're rendering
         // Grass blocks have multiple quads per face (tinted overlay + untinted base)
+        // If base model has no quads, just return empty - don't try to copy
+        if (baseQuads.isEmpty()) {
+            return baseQuads;
+        }
+
         List<BakedQuad> copiedFaceQuads = getCopiedFaceQuads(copiedModel, copiedState, side, rand, renderType);
 
         if (copiedFaceQuads.isEmpty()) {
@@ -79,7 +84,12 @@ public class CopyBlockModel implements BakedModel {
             TextureAtlasSprite fallbackSprite = copiedModel.getParticleIcon(ModelData.EMPTY);
             List<BakedQuad> remappedQuads = new ArrayList<>(baseQuads.size());
             for (BakedQuad quad : baseQuads) {
-                remappedQuads.add(remapQuadTexture(quad, fallbackSprite, quad.getTintIndex()));
+                try {
+                    remappedQuads.add(remapQuadTexture(quad, fallbackSprite, quad.getTintIndex()));
+                } catch (Exception e) {
+                    // If remapping fails, keep the original quad
+                    remappedQuads.add(quad);
+                }
             }
             return remappedQuads;
         }
@@ -98,13 +108,28 @@ public class CopyBlockModel implements BakedModel {
                 // For each matching source quad, create a remapped version
                 // This handles grass which has multiple quads per face (tinted + untinted)
                 for (BakedQuad sourceQuad : matchingSourceQuads) {
-                    remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
+                    try {
+                        remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
+                    } catch (Exception e) {
+                        // If remapping fails, keep the original quad
+                        remappedQuads.add(baseQuad);
+                    }
                 }
             } else {
                 // Fallback: use first source quad
-                BakedQuad sourceQuad = copiedFaceQuads.get(0);
-                remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
+                try {
+                    BakedQuad sourceQuad = copiedFaceQuads.get(0);
+                    remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
+                } catch (Exception e) {
+                    // If remapping fails, keep the original quad
+                    remappedQuads.add(baseQuad);
+                }
             }
+        }
+
+        // If we ended up with no quads after remapping, return the original base quads
+        if (remappedQuads.isEmpty()) {
+            return baseQuads;
         }
 
         return remappedQuads;

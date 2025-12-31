@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CC",
+    "CC",
+    "CC"
+  ],
+  "key": {
+    "C": {
+      "item": "imitari:copy_block"
+    }
+  },
+  "result": {
+    "item": "imitari:copy_block_door",
+    "count": 3
+  }
+}

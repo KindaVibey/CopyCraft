@@ -61,12 +61,19 @@ public class CopyBlockDoor extends DoorBlock implements EntityBlock, ICopyBlock 
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        // First try vanilla door logic (opening/closing)
-        InteractionResult vanillaResult = super.use(state, level, pos, player, hand, hit);
-        if (vanillaResult.consumesAction()) {
-            return vanillaResult;
+        // Check if a block has been copied
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        boolean hasCopiedBlock = blockEntity instanceof com.vibey.imitari.api.blockentity.ICopyBlockEntity copyBE &&
+                                 !copyBE.getCopiedBlock().isAir();
+
+        // If not sneaking and has copied block, try vanilla door logic first
+        if (!player.isShiftKeyDown() && hasCopiedBlock) {
+            InteractionResult vanillaResult = super.use(state, level, pos, player, hand, hit);
+            if (vanillaResult.consumesAction()) {
+                return vanillaResult;
+            }
         }
-        // Then try CopyBlock logic (placing blocks)
+        // If sneaking, or no copied block, try CopyBlock logic (placing blocks)
         return copyblock$use(state, level, pos, player, hand, hit);
     }
 

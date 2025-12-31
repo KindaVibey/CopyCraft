@@ -19,11 +19,36 @@ public class ModCreativeTabs {
                     .icon(() -> new ItemStack(ModItems.COPY_BLOCK.get()))
                     .title(Component.translatable("itemGroup.imitari"))
                     .displayItems((parameters, output) -> {
+                        // Core blocks
                         output.accept(ModItems.COPY_BLOCK.get());
                         output.accept(ModItems.COPY_BLOCK_FULL.get());
                         output.accept(ModItems.COPY_BLOCK_SLAB.get());
                         output.accept(ModItems.COPY_BLOCK_STAIRS.get());
                         output.accept(ModItems.COPY_BLOCK_LAYER.get());
+
+                        // Fence variants
+                        output.accept(ModItems.COPY_BLOCK_FENCE.get());
+                        output.accept(ModItems.COPY_BLOCK_FENCE_GATE.get());
+                        output.accept(ModItems.COPY_BLOCK_WALL.get());
+
+                        // Door variants
+                        output.accept(ModItems.COPY_BLOCK_DOOR.get());
+                        output.accept(ModItems.COPY_BLOCK_IRON_DOOR.get());
+
+                        // Trapdoor variants
+                        output.accept(ModItems.COPY_BLOCK_TRAPDOOR.get());
+                        output.accept(ModItems.COPY_BLOCK_IRON_TRAPDOOR.get());
+
+                        // Pane
+                        output.accept(ModItems.COPY_BLOCK_PANE.get());
+
+                        // Redstone
+                        output.accept(ModItems.COPY_BLOCK_BUTTON.get());
+                        output.accept(ModItems.COPY_BLOCK_LEVER.get());
+                        output.accept(ModItems.COPY_BLOCK_PRESSURE_PLATE.get());
+
+                        // Ladder
+                        output.accept(ModItems.COPY_BLOCK_LADDER.get());
                     })
                     .build());
 

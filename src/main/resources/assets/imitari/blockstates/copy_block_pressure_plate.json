@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "imitari:block/copy_block_pressure_plate"
+    },
+    "powered=true": {
+      "model": "imitari:block/copy_block_pressure_plate_down"
+    }
+  }
+}

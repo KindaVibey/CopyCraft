@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/lever_on",
+  "textures": {
+    "base": "imitari:block/copycraftblock",
+    "lever": "imitari:block/copycraftblock"
+  }
+}
