@@ -1,77 +1,62 @@
 {
-  "multipart": [
-    {
-      "apply": {
-        "model": "imitari:block/copy_block_pane_post"
-      }
+  "variants": {
+    "east=false,north=false,south=false,west=false": {
+      "model": "imitari:block/copy_block_pane_post"
     },
-    {
-      "when": {
-        "north": "true"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_side"
-      }
+    "east=false,north=false,south=false,west=true": {
+      "model": "imitari:block/copy_block_pane_one_side",
+      "y": 270
     },
-    {
-      "when": {
-        "east": "true"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_side",
-        "y": 90
-      }
+    "east=false,north=false,south=true,west=false": {
+      "model": "imitari:block/copy_block_pane_one_side",
+      "y": 180
     },
-    {
-      "when": {
-        "south": "true"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_side_alt"
-      }
+    "east=false,north=false,south=true,west=true": {
+      "model": "imitari:block/copy_block_pane_opposite_sides",
+      "y": 90
     },
-    {
-      "when": {
-        "west": "true"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_side_alt",
-        "y": 90
-      }
+    "east=false,north=true,south=false,west=false": {
+      "model": "imitari:block/copy_block_pane_one_side"
     },
-    {
-      "when": {
-        "north": "false"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_noside"
-      }
+    "east=false,north=true,south=false,west=true": {
+      "model": "imitari:block/copy_block_pane_opposite_sides",
+      "y": 270
     },
-    {
-      "when": {
-        "east": "false"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_noside_alt"
-      }
+    "east=false,north=true,south=true,west=false": {
+      "model": "imitari:block/copy_block_pane_opposite_sides"
     },
-    {
-      "when": {
-        "south": "false"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_noside_alt",
-        "y": 90
-      }
+    "east=false,north=true,south=true,west=true": {
+      "model": "imitari:block/copy_block_pane_three_sides"
     },
-    {
-      "when": {
-        "west": "false"
-      },
-      "apply": {
-        "model": "imitari:block/copy_block_pane_noside",
-        "y": 270
-      }
+    "east=true,north=false,south=false,west=false": {
+      "model": "imitari:block/copy_block_pane_one_side",
+      "y": 90
+    },
+    "east=true,north=false,south=false,west=true": {
+      "model": "imitari:block/copy_block_pane_opposite_sides"
+    },
+    "east=true,north=false,south=true,west=false": {
+      "model": "imitari:block/copy_block_pane_opposite_sides",
+      "y": 90
+    },
+    "east=true,north=false,south=true,west=true": {
+      "model": "imitari:block/copy_block_pane_three_sides",
+      "y": 90
+    },
+    "east=true,north=true,south=false,west=false": {
+      "model": "imitari:block/copy_block_pane_opposite_sides",
+      "y": 270
+    },
+    "east=true,north=true,south=false,west=true": {
+      "model": "imitari:block/copy_block_pane_three_sides",
+      "y": 270
+    },
+    "east=true,north=true,south=true,west=false": {
+      "model": "imitari:block/copy_block_pane_three_sides",
+      "y": 180
+    },
+    "east=true,north=true,south=true,west=true": {
+      "model": "imitari:block/copy_block_pane_all_sides"
     }
-  ]
+  }
 }
