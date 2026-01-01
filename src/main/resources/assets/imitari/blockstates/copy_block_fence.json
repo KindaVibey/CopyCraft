@@ -1,76 +1,9 @@
 {
-  "variants": {
-    "east=false,north=false,south=false,west=false": {
-      "model": "imitari:block/copy_block_fence_inventory"
-    },
-    "east=false,north=false,south=false,west=true": {
-      "model": "imitari:block/copy_block_fence_side",
-      "y": 270,
-      "uvlock": true
-    },
-    "east=false,north=false,south=true,west=false": {
-      "model": "imitari:block/copy_block_fence_side",
-      "y": 180,
-      "uvlock": true
-    },
-    "east=false,north=false,south=true,west=true": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "y": 90,
-      "uvlock": true
-    },
-    "east=false,north=true,south=false,west=false": {
-      "model": "imitari:block/copy_block_fence_side",
-      "uvlock": true
-    },
-    "east=false,north=true,south=false,west=true": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "y": 270,
-      "uvlock": true
-    },
-    "east=false,north=true,south=true,west=false": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "uvlock": true
-    },
-    "east=false,north=true,south=true,west=true": {
-      "model": "imitari:block/copy_block_fence_three_sides",
-      "uvlock": true
-    },
-    "east=true,north=false,south=false,west=false": {
-      "model": "imitari:block/copy_block_fence_side",
-      "y": 90,
-      "uvlock": true
-    },
-    "east=true,north=false,south=false,west=true": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "uvlock": true
-    },
-    "east=true,north=false,south=true,west=false": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "y": 90,
-      "uvlock": true
-    },
-    "east=true,north=false,south=true,west=true": {
-      "model": "imitari:block/copy_block_fence_three_sides",
-      "y": 90,
-      "uvlock": true
-    },
-    "east=true,north=true,south=false,west=false": {
-      "model": "imitari:block/copy_block_fence_opposite_sides",
-      "y": 270,
-      "uvlock": true
-    },
-    "east=true,north=true,south=false,west=true": {
-      "model": "imitari:block/copy_block_fence_three_sides",
-      "y": 270,
-      "uvlock": true
-    },
-    "east=true,north=true,south=true,west=false": {
-      "model": "imitari:block/copy_block_fence_three_sides",
-      "y": 180,
-      "uvlock": true
-    },
-    "east=true,north=true,south=true,west=true": {
-      "model": "imitari:block/copy_block_fence_all_sides"
-    }
-  }
+  "multipart": [
+    { "apply": { "model": "imitari:block/copy_block_fence_post" } },
+    { "when": { "north": "true" }, "apply": { "model": "imitari:block/copy_block_fence_side", "uvlock": true } },
+    { "when": { "east": "true" }, "apply": { "model": "imitari:block/copy_block_fence_side", "y": 90, "uvlock": true } },
+    { "when": { "south": "true" }, "apply": { "model": "imitari:block/copy_block_fence_side", "y": 180, "uvlock": true } },
+    { "when": { "west": "true" }, "apply": { "model": "imitari:block/copy_block_fence_side", "y": 270, "uvlock": true } }
+  ]
 }

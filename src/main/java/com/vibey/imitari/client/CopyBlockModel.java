@@ -55,8 +55,10 @@ public class CopyBlockModel implements BakedModel {
         BlockState copiedState = data.get(COPIED_STATE);
         boolean[] cullFaces = data.get(CULL_FACES);
 
+        // Get base quads - use ModelData.EMPTY to prevent infinite recursion
         List<BakedQuad> baseQuads = baseModel.getQuads(state, side, rand, ModelData.EMPTY, renderType);
 
+        // If no copied block, return base model as-is
         if (copiedState == null || copiedState.isAir()) {
             return baseQuads;
         }
@@ -66,17 +68,16 @@ public class CopyBlockModel implements BakedModel {
             return Collections.emptyList();
         }
 
+        // If base model has no quads, return empty (don't try to copy)
+        if (baseQuads.isEmpty()) {
+            return baseQuads;
+        }
+
         BakedModel copiedModel = Minecraft.getInstance()
                 .getBlockRenderer()
                 .getBlockModel(copiedState);
 
         // Get ALL quads for the SPECIFIC DIRECTION we're rendering
-        // Grass blocks have multiple quads per face (tinted overlay + untinted base)
-        // If base model has no quads, just return empty - don't try to copy
-        if (baseQuads.isEmpty()) {
-            return baseQuads;
-        }
-
         List<BakedQuad> copiedFaceQuads = getCopiedFaceQuads(copiedModel, copiedState, side, rand, renderType);
 
         if (copiedFaceQuads.isEmpty()) {
@@ -87,14 +88,13 @@ public class CopyBlockModel implements BakedModel {
                 try {
                     remappedQuads.add(remapQuadTexture(quad, fallbackSprite, quad.getTintIndex()));
                 } catch (Exception e) {
-                    // If remapping fails, keep the original quad
                     remappedQuads.add(quad);
                 }
             }
             return remappedQuads;
         }
 
-        // IMPROVED APPROACH: For blocks with multiple textures per face (like grass),
+        // For blocks with multiple textures per face (like grass),
         // we need to handle each base quad properly
         List<BakedQuad> remappedQuads = new ArrayList<>();
 
@@ -106,12 +106,10 @@ public class CopyBlockModel implements BakedModel {
 
             if (!matchingSourceQuads.isEmpty()) {
                 // For each matching source quad, create a remapped version
-                // This handles grass which has multiple quads per face (tinted + untinted)
                 for (BakedQuad sourceQuad : matchingSourceQuads) {
                     try {
                         remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
                     } catch (Exception e) {
-                        // If remapping fails, keep the original quad
                         remappedQuads.add(baseQuad);
                     }
                 }
@@ -121,7 +119,6 @@ public class CopyBlockModel implements BakedModel {
                     BakedQuad sourceQuad = copiedFaceQuads.get(0);
                     remappedQuads.add(remapQuadTexture(baseQuad, sourceQuad.getSprite(), sourceQuad.getTintIndex()));
                 } catch (Exception e) {
-                    // If remapping fails, keep the original quad
                     remappedQuads.add(baseQuad);
                 }
             }
@@ -135,10 +132,6 @@ public class CopyBlockModel implements BakedModel {
         return remappedQuads;
     }
 
-    /**
-     * Find ALL matching quads from source quads based on direction.
-     * Important for blocks like grass that have multiple quads per face (overlay + base).
-     */
     private List<BakedQuad> findAllMatchingQuads(List<BakedQuad> sourceQuads, Direction targetDir) {
         List<BakedQuad> matches = new ArrayList<>();
         for (BakedQuad quad : sourceQuads) {
@@ -147,24 +140,6 @@ public class CopyBlockModel implements BakedModel {
             }
         }
         return matches;
-    }
-
-    /**
-     * Find the best matching quad from source quads based on direction.
-     * This ensures we copy the correct face texture (e.g., grass top vs grass side).
-     * @deprecated Use findAllMatchingQuads instead for proper multi-quad support
-     */
-    @Deprecated
-    private BakedQuad findMatchingQuad(List<BakedQuad> sourceQuads, Direction targetDir) {
-        // First, try exact direction match
-        for (BakedQuad quad : sourceQuads) {
-            if (quad.getDirection() == targetDir) {
-                return quad;
-            }
-        }
-
-        // If no exact match, return first quad (shouldn't happen for well-formed models)
-        return sourceQuads.isEmpty() ? null : sourceQuads.get(0);
     }
 
     private List<BakedQuad> getCopiedFaceQuads(BakedModel copiedModel, BlockState copiedState,
@@ -233,9 +208,6 @@ public class CopyBlockModel implements BakedModel {
             vertexData[offset + 5] = Float.floatToRawIntBits(newV);
         }
 
-        // CRITICAL FIX: Only use the source tint index if it's actually tinted
-        // Grass blocks have tintIndex = -1 for untinted parts (dirt base) and >= 0 for tinted (grass overlay)
-        // Using the wrong tint index causes the lime green color on sides
         return new BakedQuad(vertexData, tintIndex, originalQuad.getDirection(), newSprite, originalQuad.isShade());
     }
 
@@ -293,10 +265,6 @@ public class CopyBlockModel implements BakedModel {
                 .build();
     }
 
-    /**
-     * Check if the neighbor block's face fully covers our face in the given direction.
-     * Only cull if the neighbor provides full coverage.
-     */
     private boolean doesNeighborCoverFace(BlockState ourState, BlockState neighborState,
                                           BlockAndTintGetter level, BlockPos ourPos,
                                           BlockPos neighborPos, Direction dir) {
@@ -306,10 +274,6 @@ public class CopyBlockModel implements BakedModel {
         // Get neighbor's shape on the opposite face (the face touching ours)
         Direction opposite = dir.getOpposite();
         VoxelShape neighborShape = neighborState.getFaceOcclusionShape(level, neighborPos, opposite);
-
-        // Only cull if neighbor fully covers our face
-        // For full blocks touching full blocks, both shapes will be full 16x16 faces
-        // For stairs/slabs, the shapes will be partial
 
         if (ourShape.isEmpty()) {
             return false;
@@ -323,10 +287,6 @@ public class CopyBlockModel implements BakedModel {
         return Shapes.joinIsNotEmpty(ourShape, neighborShape, BooleanOp.ONLY_FIRST) == false;
     }
 
-    /**
-     * Check if this block type should have its faces culled when adjacent to same type.
-     * This applies to glass, ice, and similar transparent blocks.
-     */
     private boolean shouldCullMatchingFaces(BlockState state) {
         // Glass and glass panes
         if (state.is(Blocks.GLASS) ||
@@ -351,11 +311,11 @@ public class CopyBlockModel implements BakedModel {
     }
 
     @Override
-    public boolean useAmbientOcclusion() { return true; }
+    public boolean useAmbientOcclusion() { return baseModel.useAmbientOcclusion(); }
     @Override
-    public boolean isGui3d() { return true; }
+    public boolean isGui3d() { return baseModel.isGui3d(); }
     @Override
-    public boolean usesBlockLight() { return true; }
+    public boolean usesBlockLight() { return baseModel.usesBlockLight(); }
     @Override
     public boolean isCustomRenderer() { return false; }
 
@@ -369,12 +329,9 @@ public class CopyBlockModel implements BakedModel {
             BakedModel copiedModel = Minecraft.getInstance()
                     .getBlockRenderer()
                     .getBlockModel(copiedState);
-
-            // Get particle icon from the COPIED block's model
-            // This ensures particles (break/place effects) show the right texture
             return copiedModel.getParticleIcon(ModelData.EMPTY);
         }
-        return baseModel.getParticleIcon();
+        return baseModel.getParticleIcon(data);
     }
 
     @Override
