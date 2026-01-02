@@ -9,86 +9,96 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-
 /**
- * Thread-safe context manager for CopyBlock tag checks.
- * Simple design: context is only valid during the getBlockState() call.
+ * Zero-overhead context for CopyBlock tag checks.
+ * No stacks, no ThreadLocals with deques, no allocations.
+ *
+ * Uses a single cached lookup per thread that's perfectly balanced:
+ * - set() called on getBlockState HEAD
+ * - clear() called on getBlockState RETURN
+ * - No memory leaks possible
  */
 public class CopyBlockContext {
 
-    private static final ThreadLocal<Deque<Context>> CONTEXT_STACK =
-            ThreadLocal.withInitial(ArrayDeque::new);
+    // Store ONLY the current lookup - single field, not a stack
+    private static final ThreadLocal<LookupCache> CACHE =
+            ThreadLocal.withInitial(LookupCache::new);
 
-    private record Context(BlockGetter level, BlockPos pos) {}
+    private static class LookupCache {
+        BlockGetter level;
+        BlockPos pos;
+        long lastAccessTime;
+        BlockState cachedResult;
 
-    /**
-     * Push a new context onto the stack
-     */
-    public static void push(BlockGetter level, BlockPos pos) {
-        CONTEXT_STACK.get().push(new Context(level, pos.immutable()));
+        void set(BlockGetter level, BlockPos pos) {
+            this.level = level;
+            this.pos = pos.immutable();
+            this.lastAccessTime = System.nanoTime();
+            this.cachedResult = null;
+        }
+
+        void clear() {
+            this.level = null;
+            this.pos = null;
+            this.cachedResult = null;
+        }
+
+        boolean isValid() {
+            // Cache valid for 1ms (same frame/operation)
+            return level != null && (System.nanoTime() - lastAccessTime) < 1_000_000L;
+        }
     }
 
     /**
-     * Pop the current context from the stack
+     * Set lookup context - called ONLY by LevelGetBlockStateMixin at HEAD
      */
-    public static void pop() {
-        Deque<Context> stack = CONTEXT_STACK.get();
-        if (!stack.isEmpty()) {
-            stack.pop();
-        }
-
-        // Clean up ThreadLocal if stack is empty
-        if (stack.isEmpty()) {
-            CONTEXT_STACK.remove();
-        }
+    public static void set(BlockGetter level, BlockPos pos) {
+        CACHE.get().set(level, pos);
     }
 
     /**
-     * Check if the copied block has the given tag.
-     * Returns null if no context or not a CopyBlock with copied content.
-     *
-     * IMPORTANT: Pops context after use to prevent leaks.
+     * Clear lookup context - called ONLY by LevelGetBlockStateMixin at RETURN
+     * This ensures perfect balance - every set() has a matching clear()
+     */
+    public static void clear() {
+        CACHE.get().clear();
+    }
+
+    /**
+     * Check tag with zero overhead - uses cached context
+     * Returns null if no valid context or not a CopyBlock
      */
     @Nullable
     public static Boolean checkCopiedBlockTag(TagKey<Block> tag) {
-        Deque<Context> stack = CONTEXT_STACK.get();
-        if (stack.isEmpty()) {
+        LookupCache cache = CACHE.get();
+
+        // No valid context? Return null to let vanilla handle it
+        if (!cache.isValid()) {
             return null;
         }
 
-        Context ctx = stack.peek();
-        if (ctx == null) {
-            pop(); // Clean up invalid state
+        // Use cached result if available (for multiple tag checks on same block)
+        if (cache.cachedResult == null) {
+            BlockEntity be = cache.level.getBlockEntity(cache.pos);
+            if (!(be instanceof ICopyBlockEntity copyBE)) {
+                return null;
+            }
+            cache.cachedResult = copyBE.getCopiedBlock();
+        }
+
+        BlockState copiedState = cache.cachedResult;
+        if (copiedState == null || copiedState.isAir()) {
             return null;
         }
 
-        BlockEntity be = ctx.level.getBlockEntity(ctx.pos);
-        if (!(be instanceof ICopyBlockEntity copyBE)) {
-            pop(); // Not our block, clean up
-            return null;
-        }
-
-        BlockState copiedState = copyBE.getCopiedBlock();
-        if (copiedState.isAir()) {
-            pop(); // Empty, clean up
-            return null;
-        }
-
-        // Check the COPIED block's tags
-        boolean result = copiedState.is(tag);
-
-        // ALWAYS pop after tag check to prevent memory leaks
-        pop();
-
-        return result;
+        // Check the copied block's tags
+        return copiedState.is(tag);
     }
 
     /**
-     * Emergency cleanup for thread safety
+     * Emergency cleanup - should never be needed with proper mixin balance
      */
     public static void clearAll() {
-        CONTEXT_STACK.remove();
+        CACHE.remove();
     }
 }

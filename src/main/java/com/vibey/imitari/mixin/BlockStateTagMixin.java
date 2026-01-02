@@ -17,21 +17,22 @@ import java.util.List;
 
 /**
  * The ONLY mixin needed for dynamic tags.
- * Now checks for ICopyBlock interface and respects config settings.
+ * Zero-overhead implementation using cached context.
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public abstract class BlockStateTagMixin {
 
     @Shadow
-    public abstract Block m_60734_(); // getBlock() - obfuscated name
+    public abstract Block getBlock();
 
     /**
      * Inject at HEAD of is(TagKey) to check CopyBlock's copied block tags.
      */
-    @Inject(method = "m_204336_", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "is(Lnet/minecraft/tags/TagKey;)Z", at = @At("HEAD"), cancellable = true)
     private void imitari$checkCopiedTags(TagKey<Block> tag, CallbackInfoReturnable<Boolean> cir) {
         // CRITICAL: Only process if this implements ICopyBlock
-        if (!(this.m_60734_() instanceof ICopyBlock copyBlock) || !copyBlock.useDynamicTags()) {
+        Block block = this.getBlock();
+        if (!(block instanceof ICopyBlock copyBlock) || !copyBlock.useDynamicTags()) {
             return;
         }
 
@@ -40,7 +41,7 @@ public abstract class BlockStateTagMixin {
             return; // Don't inherit blacklisted tags
         }
 
-        // Try to get the copied block's tags using our context system
+        // Try to get the copied block's tags using our cached context
         Boolean result = CopyBlockContext.checkCopiedBlockTag(tag);
 
         // If we got a result, use it. Otherwise, let vanilla behavior continue.

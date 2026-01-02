@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>When {@code BlockState.is(TagKey)} is called on a CopyBlock</li>
  *   <li>Imitari's mixin intercepts the call</li>
  *   <li>Checks if the block has {@code useDynamicTags() == true}</li>
- *   <li>Queries the copied block's tags instead</li>
+ *   <li>Queries the copied block's tags using cached context</li>
  * </ol>
  *
  * <p><b>Example Usage:</b></p>
@@ -86,29 +86,8 @@ public class CopyBlockTagAPI {
     }
 
     /**
-     * Push a context for tag checking.
-     * Used internally by the mixin system.
-     *
-     * <p><b>Warning:</b> Always pair with {@code popContext()} in a try-finally!</p>
-     *
-     * @param level The level
-     * @param pos The position
-     */
-    public static void pushContext(BlockGetter level, BlockPos pos) {
-        CopyBlockContext.push(level, pos);
-    }
-
-    /**
-     * Pop the current tag checking context.
-     * Used internally by the mixin system.
-     */
-    public static void popContext() {
-        CopyBlockContext.pop();
-    }
-
-    /**
      * Emergency cleanup of all contexts.
-     * Should not be needed in normal operation.
+     * Should not be needed in normal operation with the new zero-overhead system.
      */
     public static void clearAllContexts() {
         CopyBlockContext.clearAll();

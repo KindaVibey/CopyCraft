@@ -1,6 +1,5 @@
 package com.vibey.imitari.mixin;
 
-import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.util.CopyBlockContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -12,24 +11,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Captures context when BlockStates are retrieved from the world.
- * Updated to check for ICopyBlock interface.
+ *
+ * CRITICAL: Perfect push/pop balance
+ * - set() at HEAD (before operation)
+ * - clear() at RETURN (after operation, always)
+ *
+ * This ensures zero memory leaks and minimal overhead.
  */
 @Mixin(Level.class)
 public abstract class LevelGetBlockStateMixin {
 
-    @Inject(method = "m_8055_", at = @At("HEAD"))
-    private void imitari$captureContextBefore(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
-        CopyBlockContext.push((Level)(Object)this, pos);
+    @Inject(method = "getBlockState", at = @At("HEAD"))
+    private void imitari$setContext(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
+        CopyBlockContext.set((Level)(Object)this, pos);
     }
 
-    @Inject(method = "m_8055_", at = @At("RETURN"))
-    private void imitari$captureContextAfter(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
-        BlockState state = cir.getReturnValue();
-
-        // If it's NOT implementing ICopyBlock, pop immediately
-        if (!(state.getBlock() instanceof ICopyBlock)) {
-            CopyBlockContext.pop();
-        }
-        // If it IS an ICopyBlock, leave context for tag checks to consume
+    @Inject(method = "getBlockState", at = @At("RETURN"))
+    private void imitari$clearContext(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
+        // ALWAYS clear - no conditions, perfect balance
+        CopyBlockContext.clear();
     }
 }

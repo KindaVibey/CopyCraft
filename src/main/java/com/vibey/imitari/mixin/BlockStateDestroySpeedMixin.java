@@ -5,6 +5,7 @@ import com.vibey.imitari.blockentity.CopyBlockEntity;
 import com.vibey.imitari.config.ImitariConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,11 +19,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class BlockStateDestroySpeedMixin {
 
     @Shadow
-    public abstract net.minecraft.world.level.block.Block m_60734_();
+    public abstract Block getBlock();
 
-    @Inject(method = "m_60800_", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
     private void imitari$getDynamicDestroySpeed(BlockGetter level, BlockPos pos, CallbackInfoReturnable<Float> cir) {
-        if (!(this.m_60734_() instanceof ICopyBlock copyBlock)) {
+        Block block = this.getBlock();
+        if (!(block instanceof ICopyBlock copyBlock)) {
             return;
         }
 
