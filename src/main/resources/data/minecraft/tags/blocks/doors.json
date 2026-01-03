@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "imitari:copy_block_door",
+    "imitari:copy_block_iron_door"
+  ]
+}
