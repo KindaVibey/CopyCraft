@@ -15,10 +15,7 @@ import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.FenceBlock;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -106,8 +103,20 @@ public class CopyBlockFence extends FenceBlock implements EntityBlock, ICopyBloc
 
     @Override
     public boolean connectsTo(BlockState state, boolean isSideSolid, Direction direction) {
-        // Connect to other fences (including CopyBlockFence and vanilla fences)
-        return state.getBlock() instanceof FenceBlock;
+        Block block = state.getBlock();
+
+        // Connect to other CopyBlockFences
+        if (block instanceof CopyBlockFence) {
+            return true;
+        }
+
+        // Connect to CopyBlockFenceGate
+        if (block instanceof CopyBlockFenceGate) {
+            return true;
+        }
+
+        // Use vanilla fence connection logic for everything else
+        return super.connectsTo(state, isSideSolid, direction);
     }
 
     @Override

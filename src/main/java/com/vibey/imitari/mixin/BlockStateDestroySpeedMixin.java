@@ -28,27 +28,31 @@ public abstract class BlockStateDestroySpeedMixin {
             return;
         }
 
-        // Check config
+        // Get the block entity
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof CopyBlockEntity copyBE)) {
+            return;
+        }
+
+        BlockState copiedState = copyBE.getCopiedBlock();
+
+        // If empty CopyBlock, always return 0.5 hardness
+        if (copiedState == null || copiedState.isAir()) {
+            cir.setReturnValue(0.5f);
+            return;
+        }
+
+        // Check config - if disabled, use empty hardness
         if (!ImitariConfig.COPY_HARDNESS.get()) {
-            cir.setReturnValue(0.5f); // Empty CopyBlock hardness
+            cir.setReturnValue(0.5f);
             return;
         }
 
         try {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (!(be instanceof CopyBlockEntity copyBE)) {
-                return;
-            }
-
-            BlockState copiedState = copyBE.getCopiedBlock();
-
-            if (copiedState == null || copiedState.isAir()) {
-                cir.setReturnValue(0.5f); // Empty CopyBlock hardness
-                return;
-            }
-
+            // Get base destroy speed from copied block
             float baseSpeed = copiedState.getDestroySpeed(level, pos);
 
+            // Handle unbreakable blocks
             if (baseSpeed < 0.0f) {
                 cir.setReturnValue(baseSpeed);
                 return;
@@ -56,14 +60,17 @@ public abstract class BlockStateDestroySpeedMixin {
 
             BlockState currentState = (BlockState)(Object)this;
 
-            // Try to get effective mass multiplier via reflection (for addon blocks)
+            // Get effective mass multiplier (handles layers, double slabs, etc.)
             float effectiveMultiplier = getEffectiveMassMultiplier(currentState, copyBlock);
-            float multipliedSpeed = baseSpeed * effectiveMultiplier;
 
-            cir.setReturnValue(multipliedSpeed);
+            // Calculate final destroy speed: base * multiplier
+            float finalSpeed = baseSpeed * effectiveMultiplier;
+
+            cir.setReturnValue(finalSpeed);
 
         } catch (Exception e) {
-            // Error - return default
+            // On error, return empty CopyBlock hardness
+            cir.setReturnValue(0.5f);
         }
     }
 
@@ -74,17 +81,19 @@ public abstract class BlockStateDestroySpeedMixin {
      */
     private float getEffectiveMassMultiplier(BlockState state, ICopyBlock copyBlock) {
         try {
+            // Try to get the effective multiplier method (for layers, double slabs, etc.)
             java.lang.reflect.Method method = copyBlock.getClass().getMethod("getEffectiveMassMultiplier", BlockState.class);
             Object result = method.invoke(copyBlock, state);
             if (result instanceof Float) {
                 return (Float) result;
             }
         } catch (NoSuchMethodException e) {
-            // Method doesn't exist - this is normal
+            // Method doesn't exist - this is normal, just use base multiplier
         } catch (Exception e) {
-            // Other errors - continue
+            // Other errors - log and continue to fallback
         }
 
+        // Fallback to base mass multiplier
         return copyBlock.getMassMultiplier();
     }
 }
