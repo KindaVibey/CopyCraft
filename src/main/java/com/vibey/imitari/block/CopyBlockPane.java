@@ -118,4 +118,9 @@ public class CopyBlockPane extends IronBarsBlock implements EntityBlock, ICopyBl
         // Let vanilla handle the connection logic (north/east/south/west)
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        return copyblock$getLightEmission(state, level, pos);
+    }
 }

@@ -116,4 +116,9 @@ public class CopyBlockWall extends WallBlock implements EntityBlock, ICopyBlock 
         // Let vanilla handle the connection logic (up/low/tall/none)
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        return copyblock$getLightEmission(state, level, pos);
+    }
 }

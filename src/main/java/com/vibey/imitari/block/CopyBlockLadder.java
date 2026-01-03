@@ -85,4 +85,9 @@ public class CopyBlockLadder extends LadderBlock implements EntityBlock, ICopyBl
         super.setPlacedBy(level, pos, state, placer, stack);
         copyblock$setPlacedBy(level, pos, state, placer, stack);
     }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        return copyblock$getLightEmission(state, level, pos);
+    }
 }

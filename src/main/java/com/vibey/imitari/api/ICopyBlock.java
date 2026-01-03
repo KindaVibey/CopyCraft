@@ -359,4 +359,35 @@ public interface ICopyBlock {
                     soundType.getPitch() * 0.8F);
         }
     }
+
+    /**
+     * Whether this block should emit light based on the copied block's light level.
+     * Override to return false if you don't want dynamic light emission.
+     *
+     * @return true to copy light level (default), false to use block's own light
+     */
+    default boolean useDynamicLight() {
+        return true;
+    }
+
+    /**
+     * Get light emission based on copied block.
+     * Call this from your Block's {@code getLightEmission()} override.
+     *
+     * @return Light level (0-15)
+     */
+    default int copyblock$getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        if (!useDynamicLight()) {
+            return 0; // Let the block's own light level be used
+        }
+
+        //BlockEntity be = level.getBlockEntity(pos);
+        //if (be instanceof ICopyBlockEntity copyBE) {
+        //    BlockState copiedState = copyBE.getCopiedBlock();
+        //    if (!copiedState.isAir()) {
+        //        return copiedState.getLightEmission(level, pos);
+        //    }
+        //}
+        return 0; // Empty CopyBlock = no light
+    }
 }

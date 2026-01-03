@@ -101,7 +101,10 @@ public class CopyBlockStairs extends StairBlock implements EntityBlock, ICopyBlo
         super.playerWillDestroy(level, pos, state, player);
     }
 
-    // ==================== VS2 SETTINGS ====================
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        return copyblock$getLightEmission(state, level, pos);
+    }
 
     @Override
     public boolean useShapeForLightOcclusion(BlockState state) {

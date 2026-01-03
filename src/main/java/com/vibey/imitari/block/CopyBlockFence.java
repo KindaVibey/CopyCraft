@@ -136,4 +136,9 @@ public class CopyBlockFence extends FenceBlock implements EntityBlock, ICopyBloc
         // Let vanilla handle the connection logic
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
+        return copyblock$getLightEmission(state, level, pos);
+    }
 }
