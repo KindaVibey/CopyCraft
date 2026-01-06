@@ -1,6 +1,7 @@
 package com.vibey.imitari.api;
 
 import com.vibey.imitari.api.blockentity.ICopyBlockEntity;
+import com.vibey.imitari.compat.vs2.VS2CopyBlockIntegration;
 import com.vibey.imitari.config.ImitariConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
@@ -305,7 +306,7 @@ public interface ICopyBlock {
                 BlockState copiedState = be.getCopiedBlock();
 
                 // Notify VS2 BEFORE removing the block entity
-                com.vibey.imitari.vs2.VS2CopyBlockIntegration.onBlockRemoved(level, pos, state, copiedState);
+                VS2CopyBlockIntegration.onBlockRemoved(level, pos, state, copiedState);
 
                 if (!copiedState.isAir() && !be.wasRemovedByCreative()) {
                     ItemStack droppedItem = new ItemStack(copiedState.getBlock());

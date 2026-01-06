@@ -2,6 +2,7 @@ package com.vibey.imitari.block;
 
 import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.blockentity.CopyBlockEntity;
+import com.vibey.imitari.compat.vs2.VS2CopyBlockIntegration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -259,7 +260,7 @@ public class CopyBlockLayer extends Block implements EntityBlock, ICopyBlock {
 
                 // CRITICAL: Notify VS2 that layers changed!
                 if (!context.getLevel().isClientSide) {
-                    com.vibey.imitari.vs2.VS2CopyBlockIntegration.onBlockStateChanged(
+                    VS2CopyBlockIntegration.onBlockStateChanged(
                             context.getLevel(), pos, existingState, newState
                     );
                 }

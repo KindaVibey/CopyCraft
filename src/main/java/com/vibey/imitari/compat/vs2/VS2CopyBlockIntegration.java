@@ -1,4 +1,4 @@
-package com.vibey.imitari.vs2;
+package com.vibey.imitari.compat.vs2;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
@@ -53,7 +53,7 @@ public class VS2CopyBlockIntegration {
         }
 
         try {
-            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            Class<?> implClass = Class.forName("com.vibey.imitari.compat.vs2.VS2CopyBlockIntegrationImpl");
             var registerMethod = implClass.getMethod("register");
             registerMethod.invoke(null);
             LOGGER.info("VS2 integration registered successfully");
@@ -74,7 +74,7 @@ public class VS2CopyBlockIntegration {
         }
 
         try {
-            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            Class<?> implClass = Class.forName("com.vibey.imitari.compat.vs2.VS2CopyBlockIntegrationImpl");
             var method = implClass.getMethod("updateCopyBlockMass",
                     Level.class, BlockPos.class, BlockState.class, BlockState.class);
             method.invoke(null, level, pos, copyBlockState, oldCopiedBlock);
@@ -94,7 +94,7 @@ public class VS2CopyBlockIntegration {
         }
 
         try {
-            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            Class<?> implClass = Class.forName("com.vibey.imitari.compat.vs2.VS2CopyBlockIntegrationImpl");
             var method = implClass.getMethod("onBlockEntityDataLoaded",
                     Level.class, BlockPos.class, BlockState.class, BlockState.class);
             method.invoke(null, level, pos, state, copiedBlock);
@@ -114,7 +114,7 @@ public class VS2CopyBlockIntegration {
         }
 
         try {
-            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            Class<?> implClass = Class.forName("com.vibey.imitari.compat.vs2.VS2CopyBlockIntegrationImpl");
             var method = implClass.getMethod("onBlockStateChanged",
                     Level.class, BlockPos.class, BlockState.class, BlockState.class);
             method.invoke(null, level, pos, oldState, newState);
@@ -136,7 +136,7 @@ public class VS2CopyBlockIntegration {
         }
 
         try {
-            Class<?> implClass = Class.forName("com.vibey.imitari.vs2.VS2CopyBlockIntegrationImpl");
+            Class<?> implClass = Class.forName("com.vibey.imitari.compat.vs2.VS2CopyBlockIntegrationImpl");
             var method = implClass.getMethod("onBlockRemoved",
                     Level.class, BlockPos.class, BlockState.class, BlockState.class);
             method.invoke(null, level, pos, state, copiedBlock);

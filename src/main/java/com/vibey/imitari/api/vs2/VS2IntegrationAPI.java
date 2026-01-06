@@ -1,5 +1,6 @@
 package com.vibey.imitari.api.vs2;
 
+import com.vibey.imitari.compat.vs2.VS2CopyBlockIntegration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,7 +29,7 @@ public class VS2IntegrationAPI {
      * @return true if VS2 is present and functional
      */
     public static boolean isVS2Available() {
-        return com.vibey.imitari.vs2.VS2CopyBlockIntegration.isAvailable();
+        return VS2CopyBlockIntegration.isAvailable();
     }
 
     /**
@@ -48,7 +49,7 @@ public class VS2IntegrationAPI {
                                         BlockState oldCopiedBlock) {
         if (!isVS2Available()) return;
 
-        com.vibey.imitari.vs2.VS2CopyBlockIntegration.updateCopyBlockMass(
+        VS2CopyBlockIntegration.updateCopyBlockMass(
                 level, pos, copyBlockState, oldCopiedBlock
         );
     }
@@ -71,7 +72,7 @@ public class VS2IntegrationAPI {
                                                BlockState copiedBlock) {
         if (!isVS2Available()) return;
 
-        com.vibey.imitari.vs2.VS2CopyBlockIntegration.onBlockEntityDataLoaded(
+        VS2CopyBlockIntegration.onBlockEntityDataLoaded(
                 level, pos, state, copiedBlock
         );
     }
@@ -85,7 +86,7 @@ public class VS2IntegrationAPI {
     public static void registerWithVS2() {
         if (!isVS2Available()) return;
 
-        com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
+        VS2CopyBlockIntegration.register();
     }
 
     /**

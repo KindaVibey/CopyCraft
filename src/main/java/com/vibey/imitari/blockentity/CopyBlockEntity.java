@@ -1,9 +1,9 @@
 package com.vibey.imitari.blockentity;
 
-import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.api.blockentity.ICopyBlockEntity;
 import com.vibey.imitari.client.ClientEventsHandler;
 import com.vibey.imitari.client.CopyBlockModel;
+import com.vibey.imitari.compat.vs2.VS2CopyBlockIntegration;
 import com.vibey.imitari.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -93,7 +93,7 @@ public class CopyBlockEntity extends BlockEntity implements ICopyBlockEntity {
 
         if (level != null && !level.isClientSide) {
             // Call VS2 integration to update mass - PASS OLD COPIED BLOCK
-            com.vibey.imitari.vs2.VS2CopyBlockIntegration.updateCopyBlockMass(
+            VS2CopyBlockIntegration.updateCopyBlockMass(
                     level, worldPosition, getBlockState(), oldCopiedBlock
             );
 
@@ -156,7 +156,7 @@ public class CopyBlockEntity extends BlockEntity implements ICopyBlockEntity {
         // CRITICAL: If we just loaded NBT data with copied block content, notify VS2
         // This handles ship assembly where VS2 queries mass before BlockEntity NBT is loaded
         if (level != null && !level.isClientSide && !this.copiedBlock.isAir()) {
-            com.vibey.imitari.vs2.VS2CopyBlockIntegration.onBlockEntityDataLoaded(
+            VS2CopyBlockIntegration.onBlockEntityDataLoaded(
                     level, worldPosition, getBlockState(), this.copiedBlock
             );
         }

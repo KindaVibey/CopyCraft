@@ -69,6 +69,24 @@ description='''${mod_description}'''
 [[dependencies.${mod_id}]]
     modId="valkyrienskies"
     mandatory=false
+    versionRange="[2.4.0,)"
+    ordering="AFTER"
+
+[[dependencies.${mod_id}]]
+    modId="createbigcannons"
+    mandatory=false
+    versionRange="*"
+    ordering="AFTER"
+
+[[dependencies.${mod_id}]]
+    modId="vs_clockwork"
+    mandatory=false
+    versionRange="*"
+    ordering="AFTER"
+
+[[dependencies.${mod_id}]]
+    modId="warium_vs"
+    mandatory=false
     versionRange="*"
     ordering="AFTER"
 

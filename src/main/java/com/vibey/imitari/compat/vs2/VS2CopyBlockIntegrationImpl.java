@@ -1,4 +1,4 @@
-package com.vibey.imitari.vs2;
+package com.vibey.imitari.compat.vs2;
 
 import com.vibey.imitari.Imitari;
 import com.vibey.imitari.api.ICopyBlock;

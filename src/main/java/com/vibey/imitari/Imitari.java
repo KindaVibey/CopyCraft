@@ -5,6 +5,8 @@ import com.vibey.imitari.api.registration.CopyBlockRegistration;
 import com.vibey.imitari.api.CopyBlockAPI;
 import com.vibey.imitari.api.ICopyBlock;
 import com.vibey.imitari.client.CopyBlockModelProvider;
+import com.vibey.imitari.compat.cbc.CBCIntegration;
+import com.vibey.imitari.compat.vs2.VS2CopyBlockIntegration;
 import com.vibey.imitari.config.ImitariConfig;
 import com.vibey.imitari.registry.ModBlockEntities;
 import com.vibey.imitari.registry.ModBlocks;
@@ -22,7 +24,6 @@ import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -74,7 +75,9 @@ public class Imitari {
             LOGGER.info("Registered {} CopyBlocks", count);
 
             // Initialize VS2 integration (if present)
-            com.vibey.imitari.vs2.VS2CopyBlockIntegration.register();
+            VS2CopyBlockIntegration.register();
+
+            CBCIntegration.register();
         });
     }
 
