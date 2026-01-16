@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "imitari:block/copy_block_wing_cw", "uvlock": true },
+    "facing=south": { "model": "imitari:block/copy_block_wing_cw", "y": 180, "uvlock": true },
+    "facing=east": { "model": "imitari:block/copy_block_wing_cw", "y": 90, "uvlock": true },
+    "facing=west": { "model": "imitari:block/copy_block_wing_cw", "y": 270, "uvlock": true },
+    "facing=up": { "model": "imitari:block/copy_block_wing_cw", "x": 270, "uvlock": true },
+    "facing=down": { "model": "imitari:block/copy_block_wing_cw", "x": 90, "uvlock": true }
+  }
+}

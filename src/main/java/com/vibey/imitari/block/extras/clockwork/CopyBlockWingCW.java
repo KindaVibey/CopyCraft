@@ -24,6 +24,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.valkyrienskies.core.api.ships.Wing;
@@ -148,5 +150,25 @@ public class CopyBlockWingCW extends Block implements EntityBlock, ICopyBlock, W
     @Override
     public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
         return copyblock$getLightEmission(state, level, pos);
+    }
+
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        Direction facing = state.getValue(FACING);
+        return switch (facing) {
+            case UP, DOWN -> Block.box(0.0, 6.0, 0.0, 16.0, 10.0, 16.0);
+            case NORTH, SOUTH -> Block.box(0.0, 0.0, 6.0, 16.0, 16.0, 10.0);
+            case EAST, WEST -> Block.box(6.0, 0.0, 0.0, 10.0, 16.0, 16.0);
+        };
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
+
+    @Override
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
     }
 }

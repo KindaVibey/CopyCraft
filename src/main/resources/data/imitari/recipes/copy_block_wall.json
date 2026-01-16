@@ -1,16 +1,8 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "CCC",
-    "CCC"
-  ],
-  "key": {
-    "C": {
-      "item": "imitari:copy_block"
-    }
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "imitari:copy_block"
   },
-  "result": {
-    "item": "imitari:copy_block_wall",
-    "count": 6
-  }
+  "result": "imitari:copy_block_wall",
+  "count": 1
 }

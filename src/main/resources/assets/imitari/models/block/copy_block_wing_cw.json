@@ -1,0 +1,45 @@
+{
+  "format_version": "1.9.0",
+  "credit": "Made with Blockbench",
+  "parent": "block/block",
+  "textures": {
+    "1": "imitari:block/copycraftblock"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 6],
+      "to": [16, 16, 7],
+      "rotation": {"angle": 0, "axis": "y", "origin": [7, 0, 8]},
+      "faces": {
+        "north": {"uv": [0, 0, 16, 16], "texture": "#1"},
+        "east": {"uv": [15, 0, 16, 16], "texture": "#1"},
+        "west": {"uv": [0, 0, 1, 16], "texture": "#1"},
+        "up": {"uv": [0, 0, 16, 1], "texture": "#1"},
+        "down": {"uv": [0, 15, 16, 16], "texture": "#1"}
+      }
+    },
+    {
+      "from": [0, 0, 7],
+      "to": [16, 16, 9],
+      "rotation": {"angle": 0, "axis": "y", "origin": [7, 0, 7]},
+      "faces": {
+        "east": {"uv": [7, 0, 9, 16], "texture": "#1"},
+        "west": {"uv": [7, 0, 9, 16], "texture": "#1"},
+        "up": {"uv": [0, 7, 16, 9], "texture": "#1"},
+        "down": {"uv": [0, 7, 16, 9], "texture": "#1"}
+      }
+    },
+    {
+      "from": [0, 0, 9],
+      "to": [16, 16, 10],
+      "rotation": {"angle": 0, "axis": "y", "origin": [7, 0, 6]},
+      "faces": {
+        "east": {"uv": [0, 0, 1, 16], "texture": "#1"},
+        "south": {"uv": [0, 0, 16, 16], "texture": "#1"},
+        "west": {"uv": [15, 0, 16, 16], "texture": "#1"},
+        "up": {"uv": [0, 15, 16, 16], "texture": "#1"},
+        "down": {"uv": [0, 0, 16, 1], "texture": "#1"}
+      }
+    }
+  ]
+}

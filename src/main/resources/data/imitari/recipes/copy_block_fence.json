@@ -1,19 +1,8 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "CBC",
-    "CBC"
-  ],
-  "key": {
-    "C": {
-      "item": "imitari:copy_block"
-    },
-    "B": {
-      "item": "minecraft:stick"
-    }
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "imitari:copy_block"
   },
-  "result": {
-    "item": "imitari:copy_block_fence",
-    "count": 3
-  }
+  "result": "imitari:copy_block_fence",
+  "count": 1
 }

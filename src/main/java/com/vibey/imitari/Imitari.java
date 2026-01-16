@@ -11,6 +11,7 @@ import com.vibey.imitari.config.ImitariConfig;
 import com.vibey.imitari.registry.ModBlockEntities;
 import com.vibey.imitari.registry.ModBlocks;
 import com.vibey.imitari.registry.ModItems;
+import com.vibey.imitari.integration.ModIntegrations;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -63,6 +64,9 @@ public class Imitari {
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
+        // Register integration content (Clockwork, etc.)
+        ModIntegrations.register(modEventBus);
+
         // Forge event bus
         MinecraftForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
@@ -78,6 +82,9 @@ public class Imitari {
             VS2CopyBlockIntegration.register();
 
             CBCIntegration.register();
+
+            // Register integration blocks with Imitari systems
+            ModIntegrations.registerWithImitariSystems();
         });
     }
 
@@ -85,6 +92,10 @@ public class Imitari {
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS) {
             event.accept(ModItems.DEBUG_TOOL);
         }
+        // Add Clockwork blocks to Clockwork's creative tab
+        ModIntegrations.addToClockworkTab(event);
+        // Add Warium blocks to Warium's aerodynamics creative tab
+        ModIntegrations.addToWariumTab(event);
     }
 
     @SubscribeEvent

@@ -43,6 +43,11 @@ public abstract class BlockStateDestroySpeedMixin {
             return;
         }
 
+        // Check if this block uses dynamic physics
+        if (!copyBlock.useDynamicPhysics()) {
+            return; // Let the block use its own destroy speed
+        }
+
         // Check config with caching
         Boolean copyHardness = imitari$cachedCopyHardness;
         if (copyHardness == null) {

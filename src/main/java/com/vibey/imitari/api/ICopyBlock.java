@@ -99,6 +99,16 @@ public interface ICopyBlock {
     }
 
     /**
+     * Whether this block should use dynamic mass calculation with VS2.
+     * Override to return false to exclude from VS2 physics simulation.
+     *
+     * @return true to use dynamic mass (default), false for static mass
+     */
+    default boolean useDynamicMass() {
+        return true;
+    }
+
+    /**
      * Whether placing blocks into this CopyBlock consumes items.
      * Override to return false for creative-like behavior in survival.
      *

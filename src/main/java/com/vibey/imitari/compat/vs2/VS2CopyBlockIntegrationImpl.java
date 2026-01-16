@@ -49,6 +49,10 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
             return null;
         }
 
+        if (!copyBlock.useDynamicMass()) {
+            return null; // Exclude from VS2 mass calculation
+        }
+
         // Need context to access BlockEntity
         Context ctx = CURRENT_CONTEXT.get();
         if (ctx == null) {
@@ -154,6 +158,7 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
                                            BlockState oldCopiedBlock) {
         if (level.isClientSide) return;
         if (!(copyBlockState.getBlock() instanceof ICopyBlock copyBlock)) return;
+        if (!copyBlock.useDynamicMass()) return; // Don't notify VS2 if excluded from mass calculation
 
         var shipWorld = VSGameUtilsKt.getShipObjectWorld(level);
         if (shipWorld == null) return;
@@ -189,7 +194,8 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
                                                BlockState state,
                                                BlockState copiedBlock) {
         if (level == null || level.isClientSide) return;
-        if (!(state.getBlock() instanceof ICopyBlock)) return;
+        if (!(state.getBlock() instanceof ICopyBlock copyBlock)) return;
+        if (!copyBlock.useDynamicMass()) return; // Don't notify VS2 if excluded from mass calculation
 
         // Only matters if we actually have copied content
         if (copiedBlock == null || copiedBlock.isAir()) return;
@@ -225,6 +231,7 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
                                            BlockState newState) {
         if (level.isClientSide) return;
         if (!(newState.getBlock() instanceof ICopyBlock copyBlock)) return;
+        if (!copyBlock.useDynamicMass()) return; // Don't notify VS2 if excluded from mass calculation
 
         // Verify BlockEntity exists
         BlockEntity be = level.getBlockEntity(pos);
@@ -275,6 +282,7 @@ public class VS2CopyBlockIntegrationImpl implements BlockStateInfoProvider {
                                       BlockState copiedBlock) {
         if (level.isClientSide) return;
         if (!(state.getBlock() instanceof ICopyBlock copyBlock)) return;
+        if (!copyBlock.useDynamicMass()) return; // Don't notify VS2 if excluded from mass calculation
 
         var shipWorld = VSGameUtilsKt.getShipObjectWorld(level);
         if (shipWorld == null) return;

@@ -11,9 +11,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import rbasamoyai.createbigcannons.block_armor_properties.BlockArmorPropertiesHandler;
@@ -31,7 +28,6 @@ import java.util.Map;
  * This injects our blocks into CBC's BLOCK_MAP after data reload to avoid
  * needing JSON files for every block. Works for any mod that implements ICopyBlock!
  */
-@Mod.EventBusSubscriber(modid = "imitari", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class CBCIntegrationImpl {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -58,6 +54,14 @@ public class CBCIntegrationImpl {
         registerCopyBlock(ModBlocks.COPY_BLOCK_PRESSURE_PLATE.get());
         registerCopyBlock(ModBlocks.COPY_BLOCK_LADDER.get());
 
+        // Register event listener for data reload
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                net.minecraftforge.eventbus.api.EventPriority.LOWEST,
+                false,
+                AddReloadListenerEvent.class,
+                CBCIntegrationImpl::onDataReload
+        );
+
         LOGGER.info("CBC integration: Custom serializers registered");
     }
 
@@ -82,7 +86,6 @@ public class CBCIntegrationImpl {
      * This runs AFTER CBC's reload listener, so we can inject our blocks
      * even without JSON files.
      */
-    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDataReload(AddReloadListenerEvent event) {
         event.addListener((synchronizer, resourceManager, preparationsProfiler, reloadProfiler, backgroundExecutor, gameExecutor) -> {
             return synchronizer.wait(null).thenRunAsync(() -> {

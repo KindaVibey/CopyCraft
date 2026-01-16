@@ -3,6 +3,6 @@
   "ingredient": {
     "item": "imitari:copy_block"
   },
-  "result": "imitari:copy_block_door",
+  "result": "imitari:copy_block_flap_cw",
   "count": 1
 }

@@ -16,5 +16,8 @@
   "block.imitari.copy_block_button": "Copy Block Button",
   "block.imitari.copy_block_lever": "Copy Block Lever",
   "block.imitari.copy_block_pressure_plate": "Copy Block Pressure Plate",
-  "block.imitari.copy_block_ladder": "Copy Block Ladder"
+  "block.imitari.copy_block_ladder": "Copy Block Ladder",
+  "block.imitari.copy_block_wing_cw": "Copy Block Cambered Wing",
+  "block.imitari.copy_block_flap_cw": "Copy Block Wing",
+  "block.imitari.copy_block_wing_vw": "Copy Block Wing"
 }
