@@ -392,13 +392,13 @@ public interface ICopyBlock {
             return 0; // Let the block's own light level be used
         }
 
-        //BlockEntity be = level.getBlockEntity(pos);
-        //if (be instanceof ICopyBlockEntity copyBE) {
-        //    BlockState copiedState = copyBE.getCopiedBlock();
-        //    if (!copiedState.isAir()) {
-        //        return copiedState.getLightEmission(level, pos);
-        //    }
-        //}
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof ICopyBlockEntity copyBE) {
+            BlockState copiedState = copyBE.getCopiedBlock();
+            if (!copiedState.isAir()) {
+                return copiedState.getLightEmission(level, pos);
+            }
+        }
         return 0; // Empty CopyBlock = no light
     }
 }
